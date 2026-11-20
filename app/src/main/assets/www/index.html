@@ -2503,6 +2503,10 @@
             <button class="tiny-pill pay" onclick="depositGoal('${g.id}', 1000)">+ Deposit</button>
           </div>
           <div class="env-bar-track" style="margin:0;"><div class="env-bar-fill" style="width:${pct}%;background:${g.color};"></div></div>
+          <div style="display:flex;gap:8px;margin-top:10px;">
+            <button class="tiny-pill" onclick="openGoalModal(\'${g.id}\')">Edit</button>
+            <button class="tiny-pill" style="color:var(--accent-red);" onclick="deleteGoal(\'${g.id}\')">Delete</button>
+          </div>
         </div>
       `;
     }).join('');
@@ -2524,6 +2528,8 @@
             ? `<span class="savings-pill">Settled ✓</span>`
             : `<button class="tiny-pill pay" onclick="settleSplit('${s.id}')">Settle Up</button>`
           }
+          <button class="tiny-pill" onclick="openSplitModal(\'${s.id}\')">Edit</button>
+          <button class="tiny-pill" style="color:var(--accent-red);" onclick="deleteSplit(\'${s.id}\')">Delete</button>
         </div>
       </div>
     `).join('');
@@ -2542,6 +2548,18 @@
     saveState();
     renderAll();
     notifyIsland('Wallet Deleted');
+  }
+
+  function deleteGoal(id) {
+    if (!state.goals.some(g => g.id === id)) return;
+    state.goals = state.goals.filter(g => g.id !== id);
+    saveState(); renderAll(); notifyIsland('Savings Jar Deleted');
+  }
+
+  function deleteSplit(id) {
+    if (!state.splits.some(item => item.id === id)) return;
+    state.splits = state.splits.filter(item => item.id !== id);
+    saveState(); renderAll(); notifyIsland('Split Deleted');
   }
 
   function depositGoal(id, amt) {
@@ -2968,44 +2986,58 @@
     notifyIsland('Wallet Saved');
   }
 
-  function openGoalModal() {
-    openEntityModal(`
-      <div class="sheet-head"><span class="sheet-title">New Savings Jar</span><button class="close-circle" onclick="closeOverlay('entityOverlay')">×</button></div>
-      <div class="field-box"><label class="field-lbl">Goal Title</label><input class="field-input" id="goalTitleInp" placeholder="e.g., MacBook Pro Fund" /></div>
-      <div class="field-box"><label class="field-lbl">Target Amount (INR)</label><input class="field-input num" id="goalTargetInp" type="number" value="50000" /></div>
-      <button class="primary-cta" style="height:44px;" onclick="saveGoalModal()">Create Jar</button>
-    `);
+  function openGoalModal(editId = null) {
+    const goal = editId ? state.goals.find(g => g.id === editId) : null;
+    if (editId && !goal) return;
+    openEntityModal(
+      '<div class="sheet-head"><span class="sheet-title">' + (goal ? 'Edit Savings Jar' : 'New Savings Jar') + '</span><button class="close-circle" onclick="closeOverlay(\'entityOverlay\')">×</button></div>' +
+      '<div class="field-box"><label class="field-lbl">Goal Title</label><input class="field-input" id="goalTitleInp" value="' + (goal ? escapeHtml(goal.title) : '') + '" placeholder="e.g., MacBook Pro Fund" /></div>' +
+      '<div class="field-box"><label class="field-lbl">Target Amount (INR)</label><input class="field-input num" id="goalTargetInp" type="number" min="1" value="' + (goal ? goal.target : 50000) + '" /></div>' +
+      '<button class="primary-cta" style="height:44px;" onclick="saveGoalModal(\'' + (editId || '') + '\')">' + (goal ? 'Save Changes' : 'Create Jar') + '</button>'
+    );
   }
 
-  function saveGoalModal() {
+  function saveGoalModal(editId = '') {
     const title = (document.getElementById('goalTitleInp').value || '').trim() || 'Savings Goal';
-    const target = Number(document.getElementById('goalTargetInp').value) || 25000;
-    state.goals.push({ id: 'g_' + Date.now(), title, saved: 0, target, color: '#34C759' });
-    saveState();
-    closeOverlay('entityOverlay');
-    renderAll();
-    notifyIsland('Savings Jar Created');
+    const target = Number(document.getElementById('goalTargetInp').value);
+    if (!Number.isFinite(target) || target <= 0) return notifyIsland('Enter a target above 0');
+    if (editId) {
+      const goal = state.goals.find(g => g.id === editId);
+      if (!goal) return notifyIsland('Savings Jar not found');
+      goal.title = title; goal.target = target;
+    } else {
+      state.goals.push({ id: 'g_' + Date.now(), title, saved: 0, target, color: '#34C759' });
+    }
+    saveState(); closeOverlay('entityOverlay'); renderAll();
+    notifyIsland(editId ? 'Savings Jar Updated' : 'Savings Jar Created');
   }
 
-  function openSplitModal() {
-    openEntityModal(`
-      <div class="sheet-head"><span class="sheet-title">New Split IOU</span><button class="close-circle" onclick="closeOverlay('entityOverlay')">×</button></div>
-      <div class="field-box"><label class="field-lbl">Person Name</label><input class="field-input" id="spPersonInp" placeholder="e.g., Vikram" /></div>
-      <div class="field-box"><label class="field-lbl">Note</label><input class="field-input" id="spNoteInp" placeholder="e.g., Weekend Trip" /></div>
-      <div class="field-box"><label class="field-lbl">Amount (INR)</label><input class="field-input num" id="spAmtInp" type="number" value="800" /></div>
-      <button class="primary-cta" style="height:44px;" onclick="saveSplitModal()">Add Split</button>
-    `);
+  function openSplitModal(editId = null) {
+    const split = editId ? state.splits.find(item => item.id === editId) : null;
+    if (editId && !split) return;
+    openEntityModal(
+      '<div class="sheet-head"><span class="sheet-title">' + (split ? 'Edit Split IOU' : 'New Split IOU') + '</span><button class="close-circle" onclick="closeOverlay(\'entityOverlay\')">×</button></div>' +
+      '<div class="field-box"><label class="field-lbl">Person Name</label><input class="field-input" id="spPersonInp" value="' + (split ? escapeHtml(split.person) : '') + '" placeholder="e.g., Vikram" /></div>' +
+      '<div class="field-box"><label class="field-lbl">Note</label><input class="field-input" id="spNoteInp" value="' + (split ? escapeHtml(split.note) : '') + '" placeholder="e.g., Weekend Trip" /></div>' +
+      '<div class="field-box"><label class="field-lbl">Amount (INR)</label><input class="field-input num" id="spAmtInp" type="number" min="1" value="' + (split ? split.amount : 800) + '" /></div>' +
+      '<button class="primary-cta" style="height:44px;" onclick="saveSplitModal(\'' + (editId || '') + '\')">' + (split ? 'Save Changes' : 'Add Split') + '</button>'
+    );
   }
 
-  function saveSplitModal() {
+  function saveSplitModal(editId = '') {
     const person = (document.getElementById('spPersonInp').value || '').trim() || 'Friend';
     const note = (document.getElementById('spNoteInp').value || '').trim() || 'Shared Expense';
-    const amount = Number(document.getElementById('spAmtInp').value) || 500;
-    state.splits.unshift({ id: 's_' + Date.now(), person, note, amount, type: 'owed_to_you', settled: false });
-    saveState();
-    closeOverlay('entityOverlay');
-    renderAll();
-    notifyIsland('Split Added');
+    const amount = Number(document.getElementById('spAmtInp').value);
+    if (!Number.isFinite(amount) || amount <= 0) return notifyIsland('Enter an amount above 0');
+    if (editId) {
+      const split = state.splits.find(item => item.id === editId);
+      if (!split) return notifyIsland('Split not found');
+      split.person = person; split.note = note; split.amount = amount;
+    } else {
+      state.splits.unshift({ id: 's_' + Date.now(), person, note, amount, type: 'owed_to_you', settled: false });
+    }
+    saveState(); closeOverlay('entityOverlay'); renderAll();
+    notifyIsland(editId ? 'Split Updated' : 'Split Added');
   }
 
   function openCurrencyEditor() {
