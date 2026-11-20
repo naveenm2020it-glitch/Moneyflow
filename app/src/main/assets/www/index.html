@@ -3019,6 +3019,7 @@
       '<div class="sheet-head"><span class="sheet-title">' + (split ? 'Edit Split IOU' : 'New Split IOU') + '</span><button class="close-circle" onclick="closeOverlay(\'entityOverlay\')">×</button></div>' +
       '<div class="field-box"><label class="field-lbl">Person Name</label><input class="field-input" id="spPersonInp" value="' + (split ? escapeHtml(split.person) : '') + '" placeholder="e.g., Vikram" /></div>' +
       '<div class="field-box"><label class="field-lbl">Note</label><input class="field-input" id="spNoteInp" value="' + (split ? escapeHtml(split.note) : '') + '" placeholder="e.g., Weekend Trip" /></div>' +
+      '<div class="field-box"><label class="field-lbl">Split Type</label><select class="field-input" id="spTypeInp"><option value="owed_to_you" ' + (!split || split.type === 'owed_to_you' ? 'selected' : '') + '>Owed to You (They pay me)</option><option value="you_owe" ' + (split && split.type === 'you_owe' ? 'selected' : '') + '>You Owe (I pay them)</option></select></div>' +
       '<div class="field-box"><label class="field-lbl">Amount (INR)</label><input class="field-input num" id="spAmtInp" type="number" min="1" value="' + (split ? split.amount : 800) + '" /></div>' +
       '<button class="primary-cta" style="height:44px;" onclick="saveSplitModal(\'' + (editId || '') + '\')">' + (split ? 'Save Changes' : 'Add Split') + '</button>'
     );
@@ -3028,13 +3029,14 @@
     const person = (document.getElementById('spPersonInp').value || '').trim() || 'Friend';
     const note = (document.getElementById('spNoteInp').value || '').trim() || 'Shared Expense';
     const amount = Number(document.getElementById('spAmtInp').value);
+    const type = document.getElementById('spTypeInp').value === 'you_owe' ? 'you_owe' : 'owed_to_you';
     if (!Number.isFinite(amount) || amount <= 0) return notifyIsland('Enter an amount above 0');
     if (editId) {
       const split = state.splits.find(item => item.id === editId);
       if (!split) return notifyIsland('Split not found');
-      split.person = person; split.note = note; split.amount = amount;
+      split.person = person; split.note = note; split.amount = amount; split.type = type;
     } else {
-      state.splits.unshift({ id: 's_' + Date.now(), person, note, amount, type: 'owed_to_you', settled: false });
+      state.splits.unshift({ id: 's_' + Date.now(), person, note, amount, type, settled: false });
     }
     saveState(); closeOverlay('entityOverlay'); renderAll();
     notifyIsland(editId ? 'Split Updated' : 'Split Added');
