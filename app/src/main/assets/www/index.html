@@ -2016,10 +2016,13 @@
     fill.style.background = isUnder ? 'var(--accent-green)' : 'var(--accent-amber)';
     document.getElementById('paceDayMarker').style.left = `${expectedPct}%`;
 
-    // Safe/day = remaining monthly budget divided by today + remaining days.
+    // Safe/day must respect BOTH the monthly budget and cash actually available.
+    // A large monthly budget must never suggest spending more than the wallet balance.
     const daysLeft = Math.max(1, monthDays - today + 1);
     const remainingBudget = Math.max(0, cap - totalSpent);
-    const safeDaily = Math.floor(remainingBudget / daysLeft);
+    const availableCash = Math.max(0, netBal);
+    const spendableNow = Math.min(remainingBudget, availableCash);
+    const safeDaily = Math.floor(spendableNow / daysLeft);
     document.getElementById('pacePctText').textContent = `${spentPct}% of budget used`;
     document.getElementById('safeDailyText').textContent = `Safe: ${formatMoney(safeDaily)}/day`;
   }
