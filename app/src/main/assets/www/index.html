@@ -1743,17 +1743,25 @@
   const DAYS_IN_MONTH = new Date(getLocalToday().getFullYear(), getLocalToday().getMonth() + 1, 0).getDate();
 
   function getTransactionLocalDate(tx) {
-    // New transactions use a timestamp-based ID; this keeps month filtering reliable.
-    const match = String(tx.id || '').match(/^tx_(\\d{10,})$/);
+    // Prefer an explicit local date saved with the transaction.
+    if (tx.dateKey && /^\\d{4}-\\d{2}-\\d{2}$/.test(String(tx.dateKey))) {
+      const [year, month, day] = tx.dateKey.split('-').map(Number);
+      const d = new Date(year, month - 1, day);
+      if (d.getFullYear() === year && d.getMonth() === month - 1 && d.getDate() === day) return d;
+    }
+    // Timestamp IDs are used by all transactions created by the app.
+    const match = String(tx.id || '').match(/^tx_(\d{10,})$/);
     if (match) {
       const d = new Date(Number(match[1]));
       if (!Number.isNaN(d.getTime())) return d;
     }
-    // Legacy records only stored day-of-month. Treat those as current-month
-    // records so existing user data remains visible after upgrading.
+    // Legacy imported/demo entries have no year or month metadata. Keep their
+    // day-of-month visible in the current month for backwards compatibility.
     const day = Number(tx.dayOfMonth);
-    if (Number.isInteger(day) && day >= 1 && day <= DAYS_IN_MONTH) {
-      return new Date(getLocalToday().getFullYear(), getLocalToday().getMonth(), day);
+    const now = getLocalToday();
+    const monthDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    if (Number.isInteger(day) && day >= 1 && day <= monthDays) {
+      return new Date(now.getFullYear(), now.getMonth(), day);
     }
     return null;
   }
@@ -1990,10 +1998,13 @@
     document.getElementById('heroIncomeVal').textContent = formatMoney(totalIncome, true);
     document.getElementById('heroSpentVal').textContent = `−${formatMoney(totalSpent)}`;
 
-    // Spending Pace calculation
-    const cap = Math.max(1, state.monthlyCap);
-    const spentPct = Math.min(100, Math.round((totalSpent / cap) * 100));
-    const expectedPct = Math.round((TODAY_DAY_NUM / DAYS_IN_MONTH) * 100);
+    // Spending pace uses the phone's current local month and live expense total.
+    const now = getLocalToday();
+    const today = now.getDate();
+    const monthDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const cap = Math.max(0, Number(state.monthlyCap) || 0);
+    const spentPct = cap > 0 ? Math.min(100, Math.round((totalSpent / cap) * 100)) : 0;
+    const expectedPct = Math.round((today / monthDays) * 100);
     const isUnder = spentPct <= expectedPct;
 
     const badge = document.getElementById('paceStatusBadge');
@@ -2005,10 +2016,10 @@
     fill.style.background = isUnder ? 'var(--accent-green)' : 'var(--accent-amber)';
     document.getElementById('paceDayMarker').style.left = `${expectedPct}%`;
 
-    // Remaining allowance is spread over today and every remaining calendar day.
-    const daysLeft = Math.max(1, DAYS_IN_MONTH - TODAY_DAY_NUM + 1);
+    // Safe/day = remaining monthly budget divided by today + remaining days.
+    const daysLeft = Math.max(1, monthDays - today + 1);
     const remainingBudget = Math.max(0, cap - totalSpent);
-    const safeDaily = Math.round(remainingBudget / daysLeft);
+    const safeDaily = Math.floor(remainingBudget / daysLeft);
     document.getElementById('pacePctText').textContent = `${spentPct}% of budget used`;
     document.getElementById('safeDailyText').textContent = `Safe: ${formatMoney(safeDaily)}/day`;
   }
