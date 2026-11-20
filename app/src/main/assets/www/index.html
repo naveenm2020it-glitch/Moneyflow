@@ -1,0 +1,3134 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>Moneyflow — iOS 27 Liquid Glass Finance</title>
+<style>
+  :root {
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --bg-canvas: #F5F5F7;
+    --bg-aura-1: rgba(0, 122, 255, 0.08);
+    --bg-aura-2: rgba(52, 199, 89, 0.08);
+    --bg-aura-3: rgba(175, 82, 222, 0.06);
+    --glass-bg: rgba(255, 255, 255, 0.80);
+    --glass-elevated: rgba(255, 255, 255, 0.94);
+    --glass-inset: rgba(118, 118, 128, 0.08);
+    --card-solid: #FFFFFF;
+    --glass-border: rgba(255, 255, 255, 0.88);
+    --hairline: rgba(0, 0, 0, 0.06);
+    --shadow-card: 0 12px 32px rgba(0, 0, 0, 0.045), 0 1px 2px rgba(0, 0, 0, 0.025);
+    --text-primary: #1D1D1F;
+    --text-secondary: #6E6E73;
+    --text-tertiary: #8E8E93;
+    --accent-blue: #007AFF;
+    --accent-green: #34C759;
+    --accent-amber: #FF9F0A;
+    --accent-purple: #AF52DE;
+    --accent-red: #FF3B30;
+    --pill-active-bg: #FFFFFF;
+    --track-bg: rgba(120, 120, 128, 0.13);
+    --blank-cell: rgba(120, 120, 128, 0.07);
+    --blank-border: rgba(120, 120, 128, 0.14);
+    --backdrop: rgba(15, 15, 20, 0.38);
+  }
+
+  html[data-theme="dark"] {
+    --bg-canvas: #000000;
+    --bg-aura-1: rgba(10, 132, 255, 0.14);
+    --bg-aura-2: rgba(48, 209, 88, 0.10);
+    --bg-aura-3: rgba(191, 90, 242, 0.10);
+    --glass-bg: rgba(28, 28, 30, 0.82);
+    --glass-elevated: rgba(38, 38, 42, 0.94);
+    --glass-inset: rgba(255, 255, 255, 0.08);
+    --card-solid: #1C1C1E;
+    --glass-border: rgba(255, 255, 255, 0.13);
+    --hairline: rgba(255, 255, 255, 0.08);
+    --shadow-card: 0 14px 36px rgba(0, 0, 0, 0.50), 0 1px 2px rgba(0, 0, 0, 0.35);
+    --text-primary: #F5F5F7;
+    --text-secondary: #A1A1A6;
+    --text-tertiary: #6E6E73;
+    --accent-blue: #0A84FF;
+    --accent-green: #30D158;
+    --accent-amber: #FF9F0A;
+    --accent-purple: #BF5AF2;
+    --accent-red: #FF453A;
+    --pill-active-bg: rgba(58, 58, 64, 0.96);
+    --track-bg: rgba(255, 255, 255, 0.11);
+    --blank-cell: rgba(255, 255, 255, 0.06);
+    --blank-border: rgba(255, 255, 255, 0.11);
+    --backdrop: rgba(0, 0, 0, 0.65);
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
+  }
+
+  .num {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+
+  html.privacy-on .money-val {
+    filter: blur(7px);
+    user-select: none;
+    transition: filter 0.2s ease;
+  }
+
+  body {
+    background: #111114;
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    color: var(--text-primary);
+  }
+
+  /* Responsive Chassis: iPhone Pro on Desktop, Edge-to-Edge on Mobile/APK */
+  .device-frame {
+    position: relative;
+    width: 393px;
+    height: 852px;
+    border-radius: 54px;
+    background: var(--bg-canvas);
+    box-shadow:
+      0 0 0 11px #232327,
+      0 0 0 13px #3A3A40,
+      0 32px 84px rgba(0, 0, 0, 0.68);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: background-color 0.25s ease;
+  }
+
+  @media (max-width: 520px) {
+    body { background: var(--bg-canvas); }
+    .device-frame {
+      width: 100vw;
+      height: 100dvh;
+      border-radius: 0;
+      box-shadow: none;
+    }
+    .status-bar-desktop { display: none !important; }
+    .top-bar { padding-top: calc(var(--safe-top) + 12px) !important; }
+  }
+
+  .ambient-aura {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 12% 10%, var(--bg-aura-1), transparent 48%),
+      radial-gradient(circle at 88% 22%, var(--bg-aura-2), transparent 46%),
+      radial-gradient(circle at 50% 88%, var(--bg-aura-3), transparent 52%);
+    z-index: 0;
+  }
+
+  /* Desktop Status Bar & Dynamic Island */
+  .status-bar-desktop {
+    position: relative;
+    z-index: 45;
+    height: 50px;
+    padding: 14px 26px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 14px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .dynamic-island {
+    position: absolute;
+    left: 50%;
+    top: 11px;
+    transform: translateX(-50%);
+    min-width: 124px;
+    height: 34px;
+    padding: 0 14px;
+    background: #000000;
+    color: #FFFFFF;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
+    transition: all 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    z-index: 60;
+    white-space: nowrap;
+  }
+
+  .dynamic-island.expanded {
+    min-width: 256px;
+    height: 38px;
+    padding: 0 16px;
+    background: #0E0E12;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+  }
+
+  .island-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent-green);
+    flex-shrink: 0;
+  }
+
+  .island-undo {
+    background: rgba(255, 255, 255, 0.16);
+    border: none;
+    color: #FFD60A;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 999px;
+    cursor: pointer;
+    margin-left: 4px;
+  }
+
+  /* Mobile Floating Toast for Android APK */
+  .mobile-toast { display: none; }
+  @media (max-width: 520px) {
+    .mobile-toast {
+      position: fixed;
+      top: calc(var(--safe-top) + 12px);
+      left: 50%;
+      transform: translateX(-50%) translateY(-88px);
+      background: #141418;
+      color: #FFF;
+      padding: 10px 16px;
+      border-radius: 999px;
+      font-size: 12.5px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 140;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.32);
+      transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .mobile-toast.visible { transform: translateX(-50%) translateY(0); }
+  }
+
+  /* Top Utility Masthead */
+  .top-bar {
+    position: relative;
+    z-index: 25;
+    padding: 8px 20px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .brand-cluster {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .brand-title {
+    font-size: 21px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+
+  .date-badge {
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  .utility-cluster {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .util-pill {
+    height: 32px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    color: var(--text-primary);
+    font-size: 11.5px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  }
+
+  .util-icon-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  }
+
+  .util-pill.confirming {
+    background: var(--accent-red);
+    color: #FFF;
+    border-color: var(--accent-red);
+  }
+
+  /* Airy Scrollable Main Viewport */
+  .main-scroll {
+    position: relative;
+    z-index: 10;
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 6px 20px 156px;
+    scrollbar-width: none;
+  }
+  .main-scroll::-webkit-scrollbar { display: none; }
+
+  .tab-view { display: none; }
+  .tab-view.active { display: block; }
+
+  .section-gap { margin-bottom: 20px; }
+
+  .glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(26px) saturate(185%);
+    -webkit-backdrop-filter: blur(26px) saturate(185%);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-card);
+    border-radius: 26px;
+    padding: 20px;
+  }
+
+  /* HOME: Apple Card Cash-Flow & Pace Hero */
+  .hero-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .wallet-filter-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--hairline);
+    background: var(--pill-active-bg);
+    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .savings-pill {
+    padding: 5px 11px;
+    border-radius: 999px;
+    background: rgba(52, 199, 89, 0.14);
+    color: var(--accent-green);
+    font-size: 11.5px;
+    font-weight: 700;
+  }
+
+  .net-caption {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  .net-amount {
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.12;
+    margin: 4px 0 16px;
+  }
+
+  .in-out-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .flow-stat-box {
+    padding: 11px 13px;
+    border-radius: 16px;
+    background: var(--glass-inset);
+  }
+
+  .flow-stat-lbl {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 3px;
+  }
+
+  .flow-stat-val {
+    font-size: 15.5px;
+    font-weight: 700;
+  }
+
+  /* Smart Spending Pace Bar */
+  .pace-box {
+    padding-top: 14px;
+    border-top: 1px solid var(--hairline);
+  }
+
+  .pace-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 12px;
+  }
+
+  .pace-status-badge {
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .pace-status-badge.under {
+    background: rgba(52, 199, 89, 0.14);
+    color: var(--accent-green);
+  }
+
+  .pace-status-badge.over {
+    background: rgba(255, 159, 10, 0.16);
+    color: var(--accent-amber);
+  }
+
+  .pace-track {
+    position: relative;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--track-bg);
+    overflow: visible;
+    margin-bottom: 8px;
+  }
+
+  .pace-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.35s ease, background-color 0.3s ease;
+  }
+
+  .pace-marker {
+    position: absolute;
+    top: -3px;
+    width: 2.5px;
+    height: 14px;
+    border-radius: 2px;
+    background: var(--text-primary);
+    opacity: 0.7;
+  }
+
+  .pace-foot {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11.5px;
+    color: var(--text-secondary);
+  }
+
+  /* Section Headings */
+  .sec-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .sec-title {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+  }
+
+  .sec-link {
+    border: none;
+    background: transparent;
+    color: var(--accent-blue);
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  /* 1-Tap Quick-Log Strip */
+  .preset-strip {
+    display: flex;
+    gap: 9px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+  .preset-strip::-webkit-scrollbar { display: none; }
+
+  .preset-chip {
+    flex-shrink: 0;
+    padding: 10px 14px;
+    border-radius: 18px;
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.03);
+    color: var(--text-primary);
+    font-size: 12.5px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+  }
+
+  .preset-chip:active { transform: scale(0.96); }
+
+  /* 7-Day Spend Spark-Bars */
+  .spark-card { padding: 18px 20px; }
+
+  .spark-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+    align-items: end;
+    height: 92px;
+    margin-top: 10px;
+  }
+
+  .spark-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    height: 100%;
+    justify-content: flex-end;
+    cursor: pointer;
+  }
+
+  .spark-bar {
+    width: 18px;
+    border-radius: 9px;
+    background: var(--blank-cell);
+    border: 1px solid var(--blank-border);
+    transition: all 0.25s ease;
+  }
+
+  .spark-bar.has-spend {
+    background: rgba(0, 122, 255, 0.26);
+    border-color: rgba(0, 122, 255, 0.35);
+  }
+
+  .spark-col.selected .spark-bar {
+    background: var(--accent-blue);
+    border-color: var(--accent-blue);
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.32);
+  }
+
+  .spark-lbl {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+  }
+
+  .spark-col.selected .spark-lbl {
+    color: var(--accent-blue);
+    font-weight: 700;
+  }
+
+  /* Search & Filter Strip */
+  .search-bar-box {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 11px 15px;
+    border-radius: 18px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    margin-bottom: 10px;
+  }
+
+  .search-bar-box input {
+    border: none;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 13.5px;
+    width: 100%;
+    outline: none;
+  }
+
+  .filter-pills {
+    display: flex;
+    gap: 7px;
+    overflow-x: auto;
+    margin-bottom: 14px;
+    scrollbar-width: none;
+  }
+  .filter-pills::-webkit-scrollbar { display: none; }
+
+  .f-chip {
+    padding: 6px 13px;
+    border-radius: 999px;
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .f-chip.active {
+    background: var(--accent-blue);
+    color: #FFF;
+    border-color: var(--accent-blue);
+  }
+
+  /* Chronological Grouped Ledger & Zero-Bleed Swipeable Cards */
+  .date-group-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    margin: 14px 4px 8px;
+  }
+
+  .tx-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .tx-swipe-wrap {
+    position: relative;
+    border-radius: 22px;
+    overflow: hidden;
+    background: var(--card-solid);
+    box-shadow: var(--shadow-card);
+    border: 1px solid var(--hairline);
+  }
+
+  .tx-swipe-bg {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+  }
+
+  .tx-swipe-wrap.swiping .tx-swipe-bg {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .swipe-dup {
+    flex: 1;
+    background: var(--accent-blue);
+    color: #FFF;
+    display: flex;
+    align-items: center;
+    padding-left: 18px;
+    font-size: 12.5px;
+    font-weight: 700;
+  }
+
+  .swipe-del {
+    background: var(--accent-red);
+    color: #FFF;
+    border: none;
+    padding: 0 18px;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .tx-surface {
+    position: relative;
+    z-index: 2;
+    background: var(--card-solid);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+    cursor: pointer;
+  }
+
+  .tx-icon-squircle {
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .tx-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .tx-title {
+    font-size: 14.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .tx-sub {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 3px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .tag-pill {
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: var(--glass-inset);
+    color: var(--text-secondary);
+    font-size: 10.5px;
+    font-weight: 600;
+  }
+
+  .tx-right {
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .tx-amt {
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .tx-amt.expense { color: var(--text-primary); }
+  .tx-amt.income { color: var(--accent-green); }
+  .tx-amt.transfer { color: var(--accent-blue); }
+
+  .tx-del-icon {
+    border: none;
+    background: transparent;
+    color: var(--text-tertiary);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 2px 4px;
+  }
+
+  /* BUDGETS TAB */
+  .donut-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .mini-seg {
+    display: inline-flex;
+    padding: 3px;
+    border-radius: 999px;
+    background: var(--glass-inset);
+  }
+
+  .mini-seg-btn {
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    padding: 5px 11px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .mini-seg-btn.active {
+    background: var(--pill-active-bg);
+    color: var(--text-primary);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  }
+
+  .donut-body {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+
+  .donut-legend {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .d-leg-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12.5px;
+    font-weight: 600;
+  }
+
+  .cap-controls {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--hairline);
+  }
+
+  .soft-btn {
+    flex: 1;
+    padding: 8px 12px;
+    border-radius: 13px;
+    border: 1px solid var(--hairline);
+    background: var(--pill-active-bg);
+    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  /* 28-Day Spend Discipline Grid */
+  .discipline-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    margin: 14px 0 12px;
+  }
+
+  .disc-cell {
+    aspect-ratio: 1;
+    border-radius: 11px;
+    background: var(--blank-cell);
+    border: 1px solid var(--blank-border);
+    cursor: pointer;
+    transition: transform 0.15s ease;
+  }
+
+  .disc-cell:active { transform: scale(0.92); }
+  .disc-cell.today-ring { border: 1.5px solid var(--accent-blue); }
+  .disc-cell.green { background: var(--accent-green); border-color: var(--accent-green); }
+  .disc-cell.amber { background: var(--accent-amber); border-color: var(--accent-amber); }
+  .disc-cell.red { background: var(--accent-red); border-color: var(--accent-red); }
+
+  .disc-legend {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+
+  /* Category Envelopes & Bills */
+  .env-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .env-card {
+    padding: 16px 18px;
+    border-radius: 22px;
+  }
+
+  .env-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .env-left {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+  }
+
+  .env-bar-track {
+    height: 7px;
+    border-radius: 999px;
+    background: var(--track-bg);
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+
+  .env-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.3s ease;
+  }
+
+  .env-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .tiny-pill {
+    padding: 5px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--hairline);
+    background: var(--glass-inset);
+    color: var(--text-primary);
+    font-size: 11.5px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .tiny-pill.pay {
+    background: var(--accent-blue);
+    color: #FFF;
+    border-color: var(--accent-blue);
+  }
+
+  /* WALLETS TAB */
+  .wallet-card-item {
+    padding: 18px;
+    border-radius: 22px;
+    margin-bottom: 12px;
+  }
+
+  .w-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .w-default-tag {
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: rgba(0, 122, 255, 0.12);
+    color: var(--accent-blue);
+    font-size: 10.5px;
+    font-weight: 700;
+  }
+
+  .split-summary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  /* LOWER SCREEN REDESIGNED FLOATING DOCK WITH BESPOKE DUAL-TONE SCULPTED ICONS */
+  .bottom-dock-wrap {
+    position: absolute;
+    left: 20px;
+    right: 20px;
+    bottom: calc(var(--safe-bottom) + 16px);
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .glass-dock {
+    flex: 1;
+    height: 66px;
+    padding: 6px;
+    border-radius: 33px;
+    background: var(--glass-elevated);
+    backdrop-filter: blur(30px) saturate(200%);
+    -webkit-backdrop-filter: blur(30px) saturate(200%);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.14);
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+  }
+
+  .dock-item {
+    border: none;
+    background: transparent;
+    border-radius: 27px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    color: var(--text-secondary);
+    font-size: 10.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .dock-item.active {
+    background: var(--pill-active-bg);
+    color: var(--accent-blue);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07);
+  }
+
+  .dock-squircle-add {
+    width: 62px;
+    height: 62px;
+    border-radius: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    background: linear-gradient(145deg, #007AFF, #0056CC);
+    box-shadow: 0 14px 32px rgba(0, 122, 255, 0.38);
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: transform 0.16s ease;
+  }
+
+  .dock-squircle-add:active { transform: scale(0.93); }
+
+  /* SHEETS & MODALS */
+  .overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 95;
+    background: var(--backdrop);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  .overlay.open { display: flex; }
+  .overlay.center { align-items: center; padding: 20px; }
+
+  .sheet {
+    width: 100%;
+    max-height: 91%;
+    overflow-y: auto;
+    background: var(--glass-elevated);
+    backdrop-filter: blur(34px) saturate(210%);
+    -webkit-backdrop-filter: blur(34px) saturate(210%);
+    border-top: 1px solid var(--glass-border);
+    border-radius: 34px 34px 0 0;
+    padding: 12px 20px calc(var(--safe-bottom) + 24px);
+    box-shadow: 0 -18px 50px rgba(0, 0, 0, 0.24);
+    scrollbar-width: none;
+  }
+  .sheet::-webkit-scrollbar { display: none; }
+
+  .grabber {
+    width: 44px;
+    height: 5px;
+    border-radius: 999px;
+    background: var(--text-tertiary);
+    opacity: 0.35;
+    margin: 0 auto 14px;
+  }
+
+  .sheet-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .sheet-title {
+    font-size: 18px;
+    font-weight: 800;
+  }
+
+  .close-circle {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: none;
+    background: var(--glass-inset);
+    color: var(--text-secondary);
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .mode-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    padding: 4px;
+    border-radius: 16px;
+    background: var(--glass-inset);
+    margin-bottom: 12px;
+  }
+
+  .mode-tab {
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    padding: 8px 4px;
+    border-radius: 12px;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .mode-tab.active {
+    background: var(--pill-active-bg);
+    color: var(--text-primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+  }
+
+  .magic-box {
+    background: linear-gradient(135deg, rgba(0, 122, 255, 0.08), rgba(175, 82, 222, 0.08));
+    border: 1px solid rgba(0, 122, 255, 0.22);
+    border-radius: 18px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+  }
+
+  .magic-box input {
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 13.5px;
+    font-weight: 600;
+    outline: none;
+  }
+
+  .calc-display {
+    text-align: right;
+    padding: 10px 14px;
+    border-radius: 18px;
+    background: var(--glass-inset);
+    margin-bottom: 10px;
+  }
+
+  .calc-expr {
+    font-size: 12px;
+    color: var(--text-secondary);
+    min-height: 16px;
+  }
+
+  .calc-main {
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+
+  .quick-inc-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 7px;
+    margin-bottom: 10px;
+  }
+
+  .inc-btn {
+    border: 1px solid var(--hairline);
+    background: var(--pill-active-bg);
+    color: var(--text-primary);
+    padding: 7px 4px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .keypad-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .key-btn {
+    height: 46px;
+    border-radius: 15px;
+    border: 1px solid var(--hairline);
+    background: var(--pill-active-bg);
+    color: var(--text-primary);
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .key-btn:active { transform: scale(0.95); }
+  .key-btn.op { background: rgba(0, 122, 255, 0.12); color: var(--accent-blue); }
+  .key-btn.eq { background: var(--accent-blue); color: #FFF; border-color: var(--accent-blue); }
+
+  .field-box {
+    background: var(--glass-inset);
+    border-radius: 16px;
+    padding: 11px 14px;
+    margin-bottom: 11px;
+  }
+
+  .field-lbl {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+
+  .field-input {
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 14.5px;
+    font-weight: 600;
+    outline: none;
+  }
+
+  .chip-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+
+  .sel-chip {
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    background: var(--pill-active-bg);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .sel-chip.active {
+    background: var(--accent-blue);
+    color: #FFF;
+  }
+
+  .primary-cta {
+    width: 100%;
+    height: 50px;
+    border: none;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #007AFF, #005CE6);
+    color: #FFF;
+    font-size: 15.5px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 10px 26px rgba(0, 122, 255, 0.30);
+  }
+
+  /* Custom 3D Scrolling Date & Time Drum Popup */
+  .drum-modal {
+    width: 100%;
+    max-width: 344px;
+    background: var(--glass-elevated);
+    backdrop-filter: blur(34px) saturate(210%);
+    -webkit-backdrop-filter: blur(34px) saturate(210%);
+    border: 1px solid var(--glass-border);
+    border-radius: 30px;
+    padding: 20px;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.36);
+  }
+
+  .drum-stage {
+    position: relative;
+    height: 160px;
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr;
+    border-radius: 18px;
+    background: var(--glass-inset);
+    overflow: hidden;
+    margin: 14px 0;
+  }
+
+  .drum-loupe {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    top: 50%;
+    height: 38px;
+    transform: translateY(-50%);
+    border-radius: 11px;
+    background: var(--pill-active-bg);
+    border: 1px solid var(--glass-border);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .drum-col {
+    position: relative;
+    z-index: 2;
+    height: 160px;
+    overflow-y: auto;
+    scroll-snap-type: y mandatory;
+    scrollbar-width: none;
+    padding: 61px 0;
+  }
+  .drum-col::-webkit-scrollbar { display: none; }
+
+  .drum-item {
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    scroll-snap-align: center;
+    cursor: pointer;
+  }
+
+  .drum-item.selected { color: var(--text-primary); }
+</style>
+</head>
+<body>
+
+<div class="mobile-toast" id="mobileToast">
+  <span class="island-dot"></span>
+  <span id="mobileToastText">Saved</span>
+</div>
+
+<div class="device-frame">
+  <div class="ambient-aura"></div>
+
+  <!-- Desktop Status Bar & Dynamic Island -->
+  <div class="status-bar-desktop">
+    <span class="num" id="statusClock">16:48</span>
+    <div class="dynamic-island" id="dynamicIsland">
+      <span class="island-dot"></span>
+      <span id="islandText">Moneyflow</span>
+      <button class="island-undo" id="islandUndo" style="display:none" onclick="undoAction()">Undo</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <svg width="15" height="11" viewBox="0 0 16 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="4.3" y="5" width="3" height="7" rx="1"/><rect x="8.6" y="2.5" width="3" height="9.5" rx="1"/><rect x="13" y="0" width="3" height="12" rx="1"/></svg>
+      <svg width="22" height="11" viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="1" width="19" height="10" rx="3"/><rect x="3" y="3" width="15" height="6" rx="1.5" fill="currentColor"/><path d="M22 4v4" stroke-linecap="round"/></svg>
+    </div>
+  </div>
+
+  <!-- Top Utility Masthead -->
+  <header class="top-bar">
+    <div class="brand-cluster">
+      <span class="brand-title">Moneyflow</span>
+      <span class="date-badge" id="topDateBadge">Fri 20</span>
+    </div>
+    <div class="utility-cluster">
+      <button class="util-icon-btn" onclick="togglePrivacy()" aria-label="Toggle Privacy Blur" title="Privacy Mode">
+        <svg id="privacyIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+      <button class="util-pill num" id="currencyPill" onclick="toggleCurrency()">₹ INR</button>
+      <button class="util-icon-btn" onclick="toggleTheme()" aria-label="Toggle Theme">
+        <svg id="themeIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <button class="util-pill" id="resetPill" onclick="handleReset()">Reset</button>
+    </div>
+  </header>
+
+  <!-- Airy Scrollable Main Viewport -->
+  <main class="main-scroll">
+
+    <!-- ==================== TAB 1: HOME ==================== -->
+    <section class="tab-view active" id="view-home">
+
+      <!-- Apple Card Cash-Flow & Smart Pace Hero -->
+      <div class="glass-card section-gap">
+        <div class="hero-top-row">
+          <button class="wallet-filter-btn" id="heroWalletBtn" onclick="cycleHeroWallet()">All Wallets ▾</button>
+          <span class="savings-pill num" id="savingsRatePill">73% Saved</span>
+        </div>
+
+        <div class="net-caption">Net Available Balance</div>
+        <div class="net-amount num money-val" id="heroNetBalance">₹64,850</div>
+
+        <div class="in-out-grid">
+          <div class="flow-stat-box">
+            <div class="flow-stat-lbl">Monthly Income</div>
+            <div class="flow-stat-val num money-val" style="color:var(--accent-green);" id="heroIncomeVal">+₹88,700</div>
+          </div>
+          <div class="flow-stat-box">
+            <div class="flow-stat-lbl">Monthly Spent</div>
+            <div class="flow-stat-val num money-val" id="heroSpentVal">−₹23,850</div>
+          </div>
+        </div>
+
+        <div class="pace-box">
+          <div class="pace-head">
+            <span style="font-weight:700;">Monthly Spending Pace</span>
+            <span class="pace-status-badge under" id="paceStatusBadge">Under Pace</span>
+          </div>
+          <div class="pace-track">
+            <div class="pace-fill" id="paceFillBar" style="width:45%;background:var(--accent-green);"></div>
+            <div class="pace-marker" id="paceDayMarker" style="left:66%;"></div>
+          </div>
+          <div class="pace-foot num">
+            <span id="pacePctText">45% of budget used</span>
+            <span class="money-val" id="safeDailyText">Safe: ₹2,615/day</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 1-Tap Quick-Log Strip -->
+      <div class="section-gap">
+        <div class="sec-row">
+          <h2 class="sec-title">1-Tap Quick Log</h2>
+          <button class="sec-link" onclick="openPresetModal()">+ Preset</button>
+        </div>
+        <div class="preset-strip" id="quickPresetStrip"></div>
+      </div>
+
+      <!-- 7-Day Spend Spark-Bars -->
+      <div class="glass-card spark-card section-gap">
+        <div class="sec-row" style="margin-bottom:0;">
+          <h2 class="sec-title">7-Day Spend Velocity</h2>
+          <span class="sec-link" id="sparkFilterLabel" onclick="clearDayFilter()">All Days</span>
+        </div>
+        <div class="spark-grid" id="sparkBarsGrid"></div>
+      </div>
+
+      <!-- Chronological Activity Ledger -->
+      <div>
+        <div class="sec-row">
+          <h2 class="sec-title">Activity Ledger</h2>
+          <span style="font-size:11.5px;color:var(--text-tertiary);">Swipe cards</span>
+        </div>
+
+        <div class="search-bar-box">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="text" id="ledgerSearchInput" placeholder="Search merchant, note, or #tag..." oninput="renderLedger()" />
+        </div>
+
+        <div class="filter-pills" id="ledgerFilterChips"></div>
+        <div id="ledgerContainer"></div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 2: BUDGETS ==================== -->
+    <section class="tab-view" id="view-budgets">
+
+      <!-- Master Monthly Budget & Interactive Donut -->
+      <div class="glass-card section-gap">
+        <div class="donut-header-row">
+          <div>
+            <h2 class="sec-title">Monthly Budget</h2>
+            <span style="font-size:12px;color:var(--text-secondary);" id="budgetCapSub">Cap: ₹50,000</span>
+          </div>
+          <div class="mini-seg">
+            <button class="mini-seg-btn active" id="donutCatBtn" onclick="setDonutMode('category')">Category</button>
+            <button class="mini-seg-btn" id="donutTagBtn" onclick="setDonutMode('tag')">#Tag</button>
+          </div>
+        </div>
+
+        <div class="donut-body">
+          <svg width="114" height="114" viewBox="0 0 114 114" style="transform:rotate(-90deg);flex-shrink:0;" id="budgetDonutSvg"></svg>
+          <div class="donut-legend" id="budgetDonutLegend"></div>
+        </div>
+
+        <div class="cap-controls">
+          <button class="soft-btn" onclick="editMonthlyCap()">Edit Monthly Cap</button>
+          <button class="soft-btn" onclick="autoSumMonthlyCap()">Auto-Sum Envelopes</button>
+        </div>
+      </div>
+
+      <!-- 28-Day Spend Discipline Grid (Blank Past/Future; Live Today) -->
+      <div class="glass-card section-gap">
+        <div class="sec-row" style="margin-bottom:2px;">
+          <h2 class="sec-title">28-Day Spend Discipline</h2>
+          <span style="font-size:12px;font-weight:700;color:var(--accent-green);" id="disciplineTodayBadge">Live Today</span>
+        </div>
+        <p style="font-size:12px;color:var(--text-secondary);">Unlogged past & future days stay blank; Today updates live.</p>
+        <div class="discipline-grid" id="disciplineGrid"></div>
+        <div class="disc-legend">
+          <span id="discSelectedInfo">Tap any day to inspect</span>
+          <span>⬜ Blank · 🟩 Under · 🟧 Near · 🟥 Over</span>
+        </div>
+      </div>
+
+      <!-- Dynamic Category Envelopes -->
+      <div class="section-gap">
+        <div class="sec-row">
+          <h2 class="sec-title">Category Envelopes</h2>
+          <button class="sec-link" onclick="openCategoryModal()">+ New Category</button>
+        </div>
+        <div class="env-list" id="categoryEnvelopesList"></div>
+      </div>
+
+      <!-- Upcoming Recurring Bills -->
+      <div>
+        <div class="sec-row">
+          <h2 class="sec-title">Recurring Bills</h2>
+          <button class="sec-link" onclick="openBillModal()">+ Add Bill</button>
+        </div>
+        <div class="env-list" id="recurringBillsList"></div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 3: WALLETS ==================== -->
+    <section class="tab-view" id="view-wallets">
+
+      <!-- Wallets & Credit Cards -->
+      <div class="section-gap">
+        <div class="sec-row">
+          <h2 class="sec-title">Wallets & Cards</h2>
+          <button class="sec-link" onclick="openWalletModal()">+ Add Wallet</button>
+        </div>
+        <div id="walletsListContainer"></div>
+      </div>
+
+      <!-- Savings Jars (Goals) -->
+      <div class="section-gap">
+        <div class="sec-row">
+          <h2 class="sec-title">Savings Jars</h2>
+          <button class="sec-link" onclick="openGoalModal()">+ New Goal</button>
+        </div>
+        <div class="env-list" id="savingsJarsList"></div>
+      </div>
+
+      <!-- Split Expenses & IOUs -->
+      <div class="section-gap">
+        <div class="sec-row">
+          <h2 class="sec-title">Split Expenses & IOUs</h2>
+          <button class="sec-link" onclick="openSplitModal()">+ Add Split</button>
+        </div>
+        <div class="split-summary-grid">
+          <div class="glass-card" style="padding:14px 16px;border-radius:20px;">
+            <div class="flow-stat-lbl">Owed to You</div>
+            <div class="flow-stat-val num money-val" style="color:var(--accent-green);" id="owedToYouVal">₹0</div>
+          </div>
+          <div class="glass-card" style="padding:14px 16px;border-radius:20px;">
+            <div class="flow-stat-lbl">You Owe</div>
+            <div class="flow-stat-val num money-val" style="color:var(--accent-amber);" id="youOweVal">₹0</div>
+          </div>
+        </div>
+        <div class="env-list" id="splitsList"></div>
+      </div>
+
+      <!-- Currency & Offline Data Control -->
+      <div class="glass-card">
+        <h2 class="sec-title" style="margin-bottom:12px;">Currency & Local Data</h2>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:9px;">
+          <button class="soft-btn" onclick="openCurrencyEditor()">Edit Currency / Rate</button>
+          <button class="soft-btn" onclick="exportCSV()">Export CSV Statement</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:9px;">
+          <button class="soft-btn" onclick="exportJSON()">Backup JSON</button>
+          <label class="soft-btn" style="text-align:center;display:inline-block;">
+            Import JSON
+            <input type="file" accept=".json" style="display:none;" onchange="importJSON(event)" />
+          </label>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
+          <button class="soft-btn" style="color:var(--accent-red);" onclick="startFreshBlank()">Start Fresh (Blank)</button>
+          <button class="soft-btn" style="color:var(--accent-blue);" onclick="restoreDemoData()">Restore Demo Data</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== LOWER SCREEN FLOATING DOCK WITH BESPOKE DUAL-TONE ICONS ==================== -->
+  <div class="bottom-dock-wrap">
+    <nav class="glass-dock" aria-label="Primary Navigation">
+      <button class="dock-item active" data-tab="home" onclick="switchTab('home')">
+        <!-- Dual-Tone Sculpted Layered House Icon -->
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M4.5 10.5L12 4.5L19.5 10.5V18.5C19.5 19.6 18.6 20.5 17.5 20.5H6.5C5.4 20.5 4.5 19.6 4.5 18.5V10.5Z" fill="currentColor" fill-opacity="0.18"/>
+          <path d="M3.5 11L12 4L20.5 11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M5.5 9.5V18.5C5.5 19.33 6.17 20 7 20H17C17.83 20 18.5 19.33 18.5 18.5V9.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+          <rect x="9.75" y="13.5" width="4.5" height="6.5" rx="1.5" fill="currentColor"/>
+        </svg>
+        <span>Home</span>
+      </button>
+
+      <button class="dock-item" data-tab="budgets" onclick="switchTab('budgets')">
+        <!-- Dual-Tone Sculpted Concentric Ring / Pie Chart Icon -->
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="8.5" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.9"/>
+          <path d="M12 3.5C16.69 3.5 20.5 7.31 20.5 12H12V3.5Z" fill="currentColor"/>
+          <circle cx="12" cy="12" r="3" fill="var(--pill-active-bg)"/>
+        </svg>
+        <span>Budgets</span>
+      </button>
+
+      <button class="dock-item" data-tab="wallets" onclick="switchTab('wallets')">
+        <!-- Dual-Tone Sculpted Layered Apple Wallet Deck Icon -->
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <rect x="4" y="4.5" width="16" height="6" rx="2.5" fill="currentColor" fill-opacity="0.32"/>
+          <rect x="3" y="8" width="18" height="11.5" rx="3.5" fill="currentColor" fill-opacity="0.18" stroke="currentColor" stroke-width="1.9"/>
+          <path d="M3 12H21" stroke="currentColor" stroke-width="1.8"/>
+          <circle cx="16.5" cy="15.5" r="1.4" fill="currentColor"/>
+        </svg>
+        <span>Wallets</span>
+      </button>
+    </nav>
+
+    <!-- Elevated Sculpted Squircle Quick-Log Button -->
+    <button class="dock-squircle-add" onclick="openComposerSheet()" aria-label="Log Transaction">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round">
+        <path d="M12 5V19M5 12H19"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- ==================== UNIFIED SMART COMPOSER & 4x4 CALCULATOR SHEET ==================== -->
+  <div class="overlay" id="composerOverlay" onclick="closeOnBg(event, 'composerOverlay')">
+    <div class="sheet">
+      <div class="grabber"></div>
+      <div class="sheet-head">
+        <span class="sheet-title" id="composerSheetTitle">Log Transaction</span>
+        <button class="close-circle" onclick="closeOverlay('composerOverlay')">×</button>
+      </div>
+
+      <div class="mode-tabs">
+        <button class="mode-tab active" data-cmode="expense" onclick="setComposerMode('expense')">Expense</button>
+        <button class="mode-tab" data-cmode="income" onclick="setComposerMode('income')">Income</button>
+        <button class="mode-tab" data-cmode="transfer" onclick="setComposerMode('transfer')">Transfer</button>
+      </div>
+
+      <!-- Magic Natural-Language Entry -->
+      <div class="magic-box">
+        <span class="field-lbl" style="color:var(--accent-blue);margin-bottom:4px;">✦ Magic Smart Entry</span>
+        <input type="text" id="magicEntryInput" placeholder='Try "350 lunch #work" or "1200 dinner split with Rahul"' oninput="parseMagicEntry(this.value)" />
+      </div>
+
+      <!-- Calculator Readout -->
+      <div class="calc-display">
+        <div class="calc-expr num" id="calcExprLabel"></div>
+        <div class="calc-main num" id="calcMainLabel">₹0</div>
+      </div>
+
+      <div class="quick-inc-row">
+        <button class="inc-btn num" type="button" onclick="addQuickAmount(100)">+100</button>
+        <button class="inc-btn num" type="button" onclick="addQuickAmount(500)">+500</button>
+        <button class="inc-btn num" type="button" onclick="addQuickAmount(1000)">+1000</button>
+        <button class="inc-btn" type="button" style="color:var(--accent-red);" onclick="clearCalc()">Clear</button>
+      </div>
+
+      <!-- 4x4 Expression Calculator Keypad -->
+      <div class="keypad-grid">
+        <button class="key-btn" type="button" onclick="pressKey('7')">7</button>
+        <button class="key-btn" type="button" onclick="pressKey('8')">8</button>
+        <button class="key-btn" type="button" onclick="pressKey('9')">9</button>
+        <button class="key-btn op" type="button" onclick="pressOp('/')">÷</button>
+
+        <button class="key-btn" type="button" onclick="pressKey('4')">4</button>
+        <button class="key-btn" type="button" onclick="pressKey('5')">5</button>
+        <button class="key-btn" type="button" onclick="pressKey('6')">6</button>
+        <button class="key-btn op" type="button" onclick="pressOp('*')">×</button>
+
+        <button class="key-btn" type="button" onclick="pressKey('1')">1</button>
+        <button class="key-btn" type="button" onclick="pressKey('2')">2</button>
+        <button class="key-btn" type="button" onclick="pressKey('3')">3</button>
+        <button class="key-btn op" type="button" onclick="pressOp('-')">−</button>
+
+        <button class="key-btn" type="button" onclick="pressKey('.')">.</button>
+        <button class="key-btn" type="button" onclick="pressKey('0')">0</button>
+        <button class="key-btn" type="button" onclick="pressBackspace()">⌫</button>
+        <button class="key-btn eq" type="button" onclick="evalOrPlus()">+</button>
+      </div>
+
+      <div class="field-box">
+        <label class="field-lbl">Merchant / Note</label>
+        <input class="field-input" id="txTitleInput" type="text" placeholder="e.g., Blue Tokai Coffee" />
+      </div>
+
+      <div class="field-box" id="composerCatBox">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span class="field-lbl" style="margin:0;">Category</span>
+          <button class="sec-link" style="font-size:11.5px;" onclick="openCategoryModal()">+ New</button>
+        </div>
+        <div class="chip-wrap" id="composerCatChips"></div>
+      </div>
+
+      <div class="field-box">
+        <label class="field-lbl" id="composerWalletLabel">Wallet</label>
+        <div class="chip-wrap" id="composerWalletChips"></div>
+      </div>
+
+      <div class="field-box" id="composerToWalletBox" style="display:none;">
+        <label class="field-lbl">To Destination Wallet</label>
+        <div class="chip-wrap" id="composerToWalletChips"></div>
+      </div>
+
+      <div class="field-box">
+        <label class="field-lbl">#Tag & Date/Time</label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input class="field-input" id="txTagInput" type="text" placeholder="#personal" style="flex:1;" />
+          <button type="button" class="tiny-pill" id="txDateDrumBtn" onclick="openDrumModal()">Today · Now ⌄</button>
+        </div>
+      </div>
+
+      <div class="field-box" id="splitInlineBox">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <span class="field-lbl" style="margin:0;">Split Expense (Create IOU)</span>
+          <input type="checkbox" id="splitToggleCheck" onchange="toggleSplitInline()" />
+        </div>
+        <div id="splitPersonRow" style="display:none;margin-top:8px;">
+          <input class="field-input" id="splitPersonInput" type="text" placeholder="Friend's name (50/50 split)" />
+        </div>
+      </div>
+
+      <button class="primary-cta" onclick="saveComposerTransaction()">Save Transaction</button>
+    </div>
+  </div>
+
+  <!-- ==================== CUSTOM 3D SCROLLING DATE & TIME DRUM POPUP ==================== -->
+  <div class="overlay center" id="drumOverlay" onclick="closeOnBg(event, 'drumOverlay')">
+    <div class="drum-modal">
+      <div class="sheet-head" style="margin-bottom:4px;">
+        <span class="sheet-title">Select Date & Time</span>
+        <button class="close-circle" onclick="closeOverlay('drumOverlay')">×</button>
+      </div>
+      <p style="font-size:12px;color:var(--text-secondary);">Scroll the wheels to set entry timestamp</p>
+
+      <div class="drum-stage">
+        <div class="drum-loupe"></div>
+        <div class="drum-col" id="drumDayCol"></div>
+        <div class="drum-col" id="drumHourCol"></div>
+        <div class="drum-col" id="drumMinCol"></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:8px;">
+        <button class="soft-btn" onclick="closeOverlay('drumOverlay')">Cancel</button>
+        <button class="primary-cta" style="height:42px;border-radius:14px;" onclick="confirmDrumSelection()">Apply Time</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== GENERIC DYNAMIC ENTITY MODAL ==================== -->
+  <div class="overlay center" id="entityOverlay" onclick="closeOnBg(event, 'entityOverlay')">
+    <div class="drum-modal" id="entityModalBody"></div>
+  </div>
+
+</div>
+
+<script>
+  const SafeStorage = (() => {
+    const mem = {};
+    return {
+      get(k) { try { return window.localStorage.getItem(k); } catch (e) { return mem[k] || null; } },
+      set(k, v) { try { window.localStorage.setItem(k, v); } catch (e) { mem[k] = v; } }
+    };
+  })();
+
+  const TODAY_DAY_NUM = 20; // Nov 20, 2026 (Friday)
+  const DAYS_IN_MONTH = 30;
+
+  function getDefaultState() {
+    return {
+      theme: 'light',
+      privacy: false,
+      currencyCode: 'INR',
+      currencySymbol: '₹',
+      usdRate: 84,
+      heroWalletFilter: 'all',
+      selectedDayBar: null, // 0..6 (Mon..Sun)
+      ledgerFilter: 'all',
+      donutMode: 'category',
+      monthlyCap: 50000,
+      categories: [
+        { id: 'cat_food', name: 'Food & Dining', icon: '🍛', color: '#FF9F0A', limit: 14000 },
+        { id: 'cat_trans', name: 'Transport', icon: '🚕', color: '#007AFF', limit: 8000 },
+        { id: 'cat_shop', name: 'Shopping', icon: '🛍️', color: '#AF52DE', limit: 12000 },
+        { id: 'cat_bills', name: 'Bills & Utilities', icon: '⚡', color: '#FF3B30', limit: 16000 }
+      ],
+      wallets: [
+        { id: 'w_upi', name: 'UPI / HDFC Bank', type: 'bank', balance: 68400, creditLimit: 0, isDefault: true },
+        { id: 'w_card', name: 'Sapphire Credit', type: 'credit', balance: -11250, creditLimit: 100000, isDefault: false },
+        { id: 'w_cash', name: 'Cash Vault', type: 'cash', balance: 7700, creditLimit: 0, isDefault: false }
+      ],
+      presets: [
+        { id: 'p1', icon: '☕', title: 'Coffee', amount: 140, categoryId: 'cat_food' },
+        { id: 'p2', icon: '🍛', title: 'Lunch', amount: 280, categoryId: 'cat_food' },
+        { id: 'p3', icon: '🚕', title: 'Cab Ride', amount: 340, categoryId: 'cat_trans' },
+        { id: 'p4', icon: '🛒', title: 'Groceries', amount: 650, categoryId: 'cat_shop' }
+      ],
+      transactions: [
+        { id: 'tx1', mode: 'expense', title: 'Blue Tokai Specialty Coffee', amount: 240, categoryId: 'cat_food', walletId: 'w_upi', toWalletId: null, tag: '#daily', dayOfMonth: 20, dayIdx: 4, timeStr: '09:30 AM' },
+        { id: 'tx2', mode: 'expense', title: 'Uber Premier Airport Transfer', amount: 780, categoryId: 'cat_trans', walletId: 'w_card', toWalletId: null, tag: '#work', dayOfMonth: 20, dayIdx: 4, timeStr: '11:15 AM' },
+        { id: 'tx3', mode: 'income', title: 'Monthly Product Design Retainer', amount: 88700, categoryId: 'cat_bills', walletId: 'w_upi', toWalletId: null, tag: '#salary', dayOfMonth: 18, dayIdx: 2, timeStr: '10:00 AM' },
+        { id: 'tx4', mode: 'expense', title: 'Whole Foods & Organic Produce', amount: 3420, categoryId: 'cat_shop', walletId: 'w_card', toWalletId: null, tag: '#home', dayOfMonth: 17, dayIdx: 1, timeStr: '06:45 PM' },
+        { id: 'tx5', mode: 'expense', title: 'Fiber Broadband & Cloud Suite', amount: 2490, categoryId: 'cat_bills', walletId: 'w_upi', toWalletId: null, tag: '#bills', dayOfMonth: 16, dayIdx: 0, timeStr: '02:10 PM' }
+      ],
+      bills: [
+        { id: 'b1', title: 'Home Electricity & Grid', amount: 2850, dueDays: 3, categoryId: 'cat_bills', walletId: 'w_upi' },
+        { id: 'b2', title: 'Apple One & iCloud+ 2TB', amount: 365, dueDays: 6, categoryId: 'cat_bills', walletId: 'w_card' }
+      ],
+      goals: [
+        { id: 'g1', title: 'Emergency Reserve', saved: 42000, target: 100000, color: '#34C759' },
+        { id: 'g2', title: 'Kyoto Autumn Trip', saved: 28500, target: 75000, color: '#007AFF' }
+      ],
+      splits: [
+        { id: 's1', person: 'Rahul Menon', note: 'Team Dinner Split', amount: 1250, type: 'owed_to_you', settled: false },
+        { id: 's2', person: 'Ananya Rao', note: 'Concert Tickets', amount: 900, type: 'you_owe', settled: false }
+      ]
+    };
+  }
+
+  let state = (() => {
+    const raw = SafeStorage.get('moneyflow_state_v1');
+    if (raw) { try { return JSON.parse(raw); } catch (e) {} }
+    return getDefaultState();
+  })();
+
+  function saveState() {
+    SafeStorage.set('moneyflow_state_v1', JSON.stringify(state));
+  }
+
+  // Transient UI state
+  let undoPayload = null;
+  let resetArmed = false;
+  let resetTimer = null;
+  let editingTxId = null;
+  let composerMode = 'expense';
+  let calcStr = '0';
+  let composerCatId = 'cat_food';
+  let composerWalletId = 'w_upi';
+  let composerToWalletId = 'w_cash';
+  let composerDayOffset = 0; // 0 = Today (Nov 20), -1 = Yesterday, etc.
+  let composerHour = 16;
+  let composerMinute = 48;
+
+  function haptic() {
+    if (window.AndroidBridge && typeof window.AndroidBridge.hapticTick === 'function') {
+      try { window.AndroidBridge.hapticTick(); } catch (e) {}
+    }
+  }
+
+  let islandTimer = null;
+  function notifyIsland(msg, allowUndo = false) {
+    const isl = document.getElementById('dynamicIsland');
+    const txt = document.getElementById('islandText');
+    const uBtn = document.getElementById('islandUndo');
+    const mToast = document.getElementById('mobileToast');
+    const mTxt = document.getElementById('mobileToastText');
+
+    txt.textContent = msg;
+    uBtn.style.display = allowUndo ? 'inline-block' : 'none';
+    isl.classList.add('expanded');
+
+    mTxt.textContent = msg;
+    mToast.classList.add('visible');
+
+    clearTimeout(islandTimer);
+    islandTimer = setTimeout(() => {
+      isl.classList.remove('expanded');
+      txt.textContent = 'Moneyflow';
+      uBtn.style.display = 'none';
+      mToast.classList.remove('visible');
+    }, allowUndo ? 4000 : 2200);
+  }
+
+  function formatMoney(inrAmount, withSign = false) {
+    const isUsd = state.currencyCode === 'USD';
+    const val = isUsd ? (inrAmount / Math.max(1, state.usdRate)) : inrAmount;
+    const absVal = Math.abs(val);
+    const formatted = isUsd
+      ? absVal.toLocaleString('en-US', { minimumFractionDigits: absVal % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 })
+      : Math.round(absVal).toLocaleString('en-IN');
+    const sign = withSign ? (inrAmount >= 0 ? '+' : '−') : (inrAmount < 0 ? '−' : '');
+    return `${sign}${state.currencySymbol}${formatted}`;
+  }
+
+  function applyThemeAndPrivacy() {
+    document.documentElement.setAttribute('data-theme', state.theme);
+    document.documentElement.classList.toggle('privacy-on', !!state.privacy);
+    const isDark = state.theme === 'dark';
+    document.getElementById('themeIcon').innerHTML = isDark
+      ? '<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>'
+      : '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+    document.getElementById('privacyIcon').innerHTML = state.privacy
+      ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'
+      : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+    document.getElementById('currencyPill').textContent = `${state.currencySymbol} ${state.currencyCode}`;
+    if (window.AndroidBridge && typeof window.AndroidBridge.setStatusBarDarkIcons === 'function') {
+      try { window.AndroidBridge.setStatusBarDarkIcons(!isDark); } catch (e) {}
+    }
+  }
+
+  function toggleTheme() {
+    state.theme = state.theme === 'light' ? 'dark' : 'light';
+    saveState();
+    applyThemeAndPrivacy();
+    haptic();
+  }
+
+  function togglePrivacy() {
+    state.privacy = !state.privacy;
+    saveState();
+    applyThemeAndPrivacy();
+    haptic();
+    notifyIsland(state.privacy ? 'Balances Hidden' : 'Balances Visible');
+  }
+
+  function toggleCurrency() {
+    if (state.currencyCode === 'INR') {
+      state.currencyCode = 'USD';
+      state.currencySymbol = '$';
+    } else {
+      state.currencyCode = 'INR';
+      state.currencySymbol = '₹';
+    }
+    saveState();
+    applyThemeAndPrivacy();
+    renderAll();
+    haptic();
+    notifyIsland(`Currency: ${state.currencyCode}`);
+  }
+
+  function handleReset() {
+    const btn = document.getElementById('resetPill');
+    if (!resetArmed) {
+      resetArmed = true;
+      btn.textContent = 'Confirm';
+      btn.classList.add('confirming');
+      clearTimeout(resetTimer);
+      resetTimer = setTimeout(() => {
+        resetArmed = false;
+        btn.textContent = 'Reset';
+        btn.classList.remove('confirming');
+      }, 3000);
+    } else {
+      clearTimeout(resetTimer);
+      resetArmed = false;
+      btn.textContent = 'Reset';
+      btn.classList.remove('confirming');
+      const keepTheme = state.theme;
+      state = getDefaultState();
+      state.theme = keepTheme;
+      saveState();
+      applyThemeAndPrivacy();
+      renderAll();
+      notifyIsland('Demo Data Restored');
+      haptic();
+    }
+  }
+
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-' + tab).classList.add('active');
+    document.querySelectorAll('.dock-item').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    renderAll();
+  }
+
+  // ==================== HOME TAB RENDERING ====================
+  function cycleHeroWallet() {
+    const ids = ['all', ...state.wallets.map(w => w.id)];
+    const cur = ids.indexOf(state.heroWalletFilter);
+    state.heroWalletFilter = ids[(cur + 1) % ids.length];
+    saveState();
+    renderAll();
+    haptic();
+  }
+
+  function renderHomeHero() {
+    const wf = state.heroWalletFilter;
+    const wObj = state.wallets.find(w => w.id === wf);
+    document.getElementById('heroWalletBtn').textContent = wObj ? `${wObj.name} ▾` : 'All Wallets ▾';
+
+    const scopedWallets = wObj ? [wObj] : state.wallets;
+    const netBal = scopedWallets.reduce((s, w) => s + w.balance, 0);
+
+    const scopedTx = state.transactions.filter(t => wf === 'all' || t.walletId === wf || t.toWalletId === wf);
+    const totalIncome = scopedTx.filter(t => t.mode === 'income').reduce((s, t) => s + t.amount, 0);
+    const totalSpent = scopedTx.filter(t => t.mode === 'expense').reduce((s, t) => s + t.amount, 0);
+
+    const saveRate = totalIncome > 0 ? Math.max(0, Math.round(((totalIncome - totalSpent) / totalIncome) * 100)) : 0;
+    document.getElementById('savingsRatePill').textContent = `${saveRate}% Saved`;
+    document.getElementById('heroNetBalance').textContent = formatMoney(netBal);
+    document.getElementById('heroIncomeVal').textContent = formatMoney(totalIncome, true);
+    document.getElementById('heroSpentVal').textContent = `−${formatMoney(totalSpent)}`;
+
+    // Spending Pace calculation
+    const cap = Math.max(1, state.monthlyCap);
+    const spentPct = Math.min(100, Math.round((totalSpent / cap) * 100));
+    const expectedPct = Math.round((TODAY_DAY_NUM / DAYS_IN_MONTH) * 100);
+    const isUnder = spentPct <= expectedPct;
+
+    const badge = document.getElementById('paceStatusBadge');
+    badge.textContent = isUnder ? 'Under Pace' : 'Over Pace';
+    badge.className = `pace-status-badge ${isUnder ? 'under' : 'over'}`;
+
+    const fill = document.getElementById('paceFillBar');
+    fill.style.width = `${spentPct}%`;
+    fill.style.background = isUnder ? 'var(--accent-green)' : 'var(--accent-amber)';
+    document.getElementById('paceDayMarker').style.left = `${expectedPct}%`;
+
+    const daysLeft = Math.max(1, DAYS_IN_MONTH - TODAY_DAY_NUM + 1);
+    const safeDaily = Math.max(0, Math.round((cap - totalSpent) / daysLeft));
+    document.getElementById('pacePctText').textContent = `${spentPct}% of budget used`;
+    document.getElementById('safeDailyText').textContent = `Safe: ${formatMoney(safeDaily)}/day`;
+  }
+
+  function renderPresets() {
+    const strip = document.getElementById('quickPresetStrip');
+    strip.innerHTML = state.presets.map(p => `
+      <button class="preset-chip num" onclick="logPreset('${p.id}')">
+        <span>${p.icon}</span>
+        <span>${escapeHtml(p.title)}</span>
+        <strong style="color:var(--accent-blue);">${formatMoney(p.amount)}</strong>
+      </button>
+    `).join('');
+  }
+
+  function logPreset(presetId) {
+    const p = state.presets.find(x => x.id === presetId);
+    if (!p) return;
+    const defWallet = state.wallets.find(w => w.isDefault) || state.wallets[0];
+    const tx = {
+      id: 'tx_' + Date.now(),
+      mode: 'expense',
+      title: p.title,
+      amount: p.amount,
+      categoryId: p.categoryId || state.categories[0]?.id || 'cat_food',
+      walletId: defWallet.id,
+      toWalletId: null,
+      tag: '#quick',
+      dayOfMonth: TODAY_DAY_NUM,
+      dayIdx: 4,
+      timeStr: getCurrentTime12()
+    };
+    defWallet.balance -= p.amount;
+    state.transactions.unshift(tx);
+    undoPayload = { type: 'newTx', txId: tx.id };
+    saveState();
+    renderAll();
+    haptic();
+    notifyIsland(`Logged ${p.title} (${formatMoney(p.amount)})`, true);
+  }
+
+  function renderSparkBars() {
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const totals = days.map((_, idx) =>
+      state.transactions
+        .filter(t => t.mode === 'expense' && t.dayIdx === idx)
+        .reduce((s, t) => s + t.amount, 0)
+    );
+    const maxVal = Math.max(1, ...totals);
+    document.getElementById('sparkFilterLabel').textContent =
+      state.selectedDayBar === null ? 'All Days' : `${days[state.selectedDayBar]} · Clear`;
+
+    document.getElementById('sparkBarsGrid').innerHTML = days.map((d, idx) => {
+      const val = totals[idx];
+      const hPx = val > 0 ? Math.max(14, Math.round((val / maxVal) * 68)) : 8;
+      const isSel = state.selectedDayBar === idx;
+      return `
+        <div class="spark-col ${isSel ? 'selected' : ''}" onclick="toggleDayBar(${idx})">
+          <div class="spark-bar ${val > 0 ? 'has-spend' : ''}" style="height:${hPx}px;"></div>
+          <span class="spark-lbl">${d}</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function toggleDayBar(idx) {
+    state.selectedDayBar = state.selectedDayBar === idx ? null : idx;
+    renderSparkBars();
+    renderLedger();
+    haptic();
+  }
+
+  function clearDayFilter() {
+    state.selectedDayBar = null;
+    renderSparkBars();
+    renderLedger();
+  }
+
+  function renderLedger() {
+    const chips = [
+      { id: 'all', label: 'All' },
+      { id: 'expense', label: 'Expenses' },
+      { id: 'income', label: 'Income' },
+      ...state.categories.map(c => ({ id: c.id, label: `${c.icon} ${c.name}` }))
+    ];
+    document.getElementById('ledgerFilterChips').innerHTML = chips.map(c => `
+      <button class="f-chip ${state.ledgerFilter === c.id ? 'active' : ''}" onclick="setLedgerFilter('${c.id}')">${escapeHtml(c.label)}</button>
+    `).join('');
+
+    const q = (document.getElementById('ledgerSearchInput').value || '').trim().toLowerCase();
+    const list = state.transactions.filter(t => {
+      if (state.heroWalletFilter !== 'all' && t.walletId !== state.heroWalletFilter && t.toWalletId !== state.heroWalletFilter) return false;
+      if (state.selectedDayBar !== null && t.dayIdx !== state.selectedDayBar) return false;
+      if (state.ledgerFilter === 'expense' && t.mode !== 'expense') return false;
+      if (state.ledgerFilter === 'income' && t.mode !== 'income') return false;
+      if (state.ledgerFilter !== 'all' && state.ledgerFilter !== 'expense' && state.ledgerFilter !== 'income' && t.categoryId !== state.ledgerFilter) return false;
+      if (q && !t.title.toLowerCase().includes(q) && !(t.tag || '').toLowerCase().includes(q)) return false;
+      return true;
+    });
+
+    const container = document.getElementById('ledgerContainer');
+    if (list.length === 0) {
+      container.innerHTML = `<div class="glass-card" style="text-align:center;color:var(--text-secondary);font-size:13.5px;">No matching transactions</div>`;
+      return;
+    }
+
+    // Group chronologically by dayOfMonth
+    const groups = {};
+    list.forEach(t => {
+      const k = t.dayOfMonth || TODAY_DAY_NUM;
+      if (!groups[k]) groups[k] = [];
+      groups[k].push(t);
+    });
+
+    const sortedDays = Object.keys(groups).map(Number).sort((a, b) => b - a);
+    container.innerHTML = sortedDays.map(dayNum => {
+      const items = groups[dayNum];
+      const dayLabel = dayNum === TODAY_DAY_NUM ? 'Today · Nov 20' : dayNum === TODAY_DAY_NUM - 1 ? 'Yesterday · Nov 19' : `Nov ${dayNum}`;
+      const dayNet = items.reduce((s, t) => t.mode === 'income' ? s + t.amount : t.mode === 'expense' ? s - t.amount : s, 0);
+
+      const cardsHtml = items.map(t => {
+        const cat = state.categories.find(c => c.id === t.categoryId) || { icon: '💳', name: 'General', color: '#007AFF' };
+        const wal = state.wallets.find(w => w.id === t.walletId) || { name: 'Wallet' };
+        const signPrefix = t.mode === 'income' ? '+' : t.mode === 'expense' ? '−' : '⇄ ';
+        return `
+          <div class="tx-swipe-wrap" id="tx-wrap-${t.id}"
+               ontouchstart="txTouchStart(event, '${t.id}')"
+               ontouchmove="txTouchMove(event, '${t.id}')"
+               ontouchend="txTouchEnd(event, '${t.id}')">
+            <div class="tx-swipe-bg">
+              <div class="swipe-dup">↻ Repeat</div>
+              <button class="swipe-del" onclick="deleteTx('${t.id}')">Delete</button>
+            </div>
+            <div class="tx-surface" id="tx-surf-${t.id}" onclick="openComposerForEdit('${t.id}')">
+              <div class="tx-icon-squircle" style="background:${cat.color}1F;">${t.mode === 'income' ? '💰' : t.mode === 'transfer' ? '⇄' : cat.icon}</div>
+              <div class="tx-info">
+                <div class="tx-title">${escapeHtml(t.title)}</div>
+                <div class="tx-sub">
+                  <span>${escapeHtml(wal.name)}</span>
+                  ${t.tag ? `<span class="tag-pill">${escapeHtml(t.tag)}</span>` : ''}
+                </div>
+              </div>
+              <div class="tx-right">
+                <div class="tx-amt num money-val ${t.mode}">${signPrefix}${formatMoney(t.amount)}</div>
+                <div style="font-size:11px;color:var(--text-tertiary);margin-top:2px;">
+                  <span>${t.timeStr || ''}</span>
+                  <button class="tx-del-icon" onclick="event.stopPropagation();deleteTx('${t.id}')" aria-label="Delete">×</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <div class="date-group-head num">
+          <span>${dayLabel}</span>
+          <span class="money-val">${formatMoney(dayNet, true)}</span>
+        </div>
+        <div class="tx-stack">${cardsHtml}</div>
+      `;
+    }).join('');
+  }
+
+  function setLedgerFilter(id) {
+    state.ledgerFilter = id;
+    renderLedger();
+  }
+
+  // Swipe gestures on transactions
+  let swStartX = 0, swDeltaX = 0;
+  function txTouchStart(e, id) { swStartX = e.touches[0].clientX; swDeltaX = 0; }
+  function txTouchMove(e, id) {
+    swDeltaX = e.touches[0].clientX - swStartX;
+    const w = document.getElementById('tx-wrap-' + id);
+    const s = document.getElementById('tx-surf-' + id);
+    if (!w || !s) return;
+    if (Math.abs(swDeltaX) > 10) {
+      w.classList.add('swiping');
+      s.style.transform = `translateX(${Math.max(-96, Math.min(96, swDeltaX))}px)`;
+    }
+  }
+  function txTouchEnd(e, id) {
+    const w = document.getElementById('tx-wrap-' + id);
+    const s = document.getElementById('tx-surf-' + id);
+    if (!w || !s) return;
+    if (swDeltaX > 72) {
+      s.style.transform = 'translateX(0px)';
+      w.classList.remove('swiping');
+      duplicateTx(id);
+    } else if (swDeltaX < -64) {
+      s.style.transform = 'translateX(-88px)';
+    } else {
+      s.style.transform = 'translateX(0px)';
+      w.classList.remove('swiping');
+    }
+  }
+
+  function duplicateTx(id) {
+    const orig = state.transactions.find(t => t.id === id);
+    if (!orig) return;
+    const copy = { ...orig, id: 'tx_' + Date.now(), dayOfMonth: TODAY_DAY_NUM, dayIdx: 4, timeStr: getCurrentTime12() };
+    applyWalletBalanceEffect(copy, 1);
+    state.transactions.unshift(copy);
+    saveState();
+    renderAll();
+    haptic();
+    notifyIsland(`Repeated: ${copy.title}`);
+  }
+
+  function deleteTx(id) {
+    const idx = state.transactions.findIndex(t => t.id === id);
+    if (idx === -1) return;
+    const [removed] = state.transactions.splice(idx, 1);
+    applyWalletBalanceEffect(removed, -1);
+    undoPayload = { type: 'deletedTx', tx: removed, index: idx };
+    saveState();
+    renderAll();
+    haptic();
+    notifyIsland('Transaction Deleted', true);
+  }
+
+  function applyWalletBalanceEffect(tx, dir) {
+    const w = state.wallets.find(x => x.id === tx.walletId);
+    if (!w) return;
+    if (tx.mode === 'expense') w.balance -= tx.amount * dir;
+    else if (tx.mode === 'income') w.balance += tx.amount * dir;
+    else if (tx.mode === 'transfer') {
+      w.balance -= tx.amount * dir;
+      const dest = state.wallets.find(x => x.id === tx.toWalletId);
+      if (dest) dest.balance += tx.amount * dir;
+    }
+  }
+
+  function undoAction() {
+    if (!undoPayload) return;
+    if (undoPayload.type === 'deletedTx') {
+      state.transactions.splice(undoPayload.index, 0, undoPayload.tx);
+      applyWalletBalanceEffect(undoPayload.tx, 1);
+    } else if (undoPayload.type === 'newTx') {
+      const idx = state.transactions.findIndex(t => t.id === undoPayload.txId);
+      if (idx !== -1) {
+        const [rem] = state.transactions.splice(idx, 1);
+        applyWalletBalanceEffect(rem, -1);
+      }
+    } else if (undoPayload.type === 'deletedCat') {
+      state.categories.splice(undoPayload.index, 0, undoPayload.cat);
+    }
+    undoPayload = null;
+    saveState();
+    renderAll();
+    notifyIsland('Restored ✓');
+  }
+
+  // ==================== BUDGETS TAB RENDERING ====================
+  function setDonutMode(m) {
+    state.donutMode = m;
+    document.getElementById('donutCatBtn').classList.toggle('active', m === 'category');
+    document.getElementById('donutTagBtn').classList.toggle('active', m === 'tag');
+    renderBudgetsTab();
+  }
+
+  function renderBudgetsTab() {
+    document.getElementById('budgetCapSub').textContent = `Monthly Cap: ${formatMoney(state.monthlyCap)}`;
+    const expenses = state.transactions.filter(t => t.mode === 'expense');
+    const totalExp = Math.max(1, expenses.reduce((s, t) => s + t.amount, 0));
+
+    let slices = [];
+    if (state.donutMode === 'category') {
+      slices = state.categories.map(c => {
+        const sum = expenses.filter(t => t.categoryId === c.id).reduce((s, t) => s + t.amount, 0);
+        return { label: `${c.icon} ${c.name}`, amount: sum, color: c.color };
+      }).filter(s => s.amount > 0);
+    } else {
+      const tagMap = {};
+      const palette = ['#007AFF', '#34C759', '#FF9F0A', '#AF52DE', '#FF3B30'];
+      expenses.forEach(t => {
+        const tg = t.tag || '#untagged';
+        tagMap[tg] = (tagMap[tg] || 0) + t.amount;
+      });
+      slices = Object.keys(tagMap).map((tg, i) => ({
+        label: tg,
+        amount: tagMap[tg],
+        color: palette[i % palette.length]
+      }));
+    }
+
+    const svg = document.getElementById('budgetDonutSvg');
+    const C = 263.9;
+    let offset = 0;
+    const rings = slices.map(s => {
+      const len = (s.amount / totalExp) * C;
+      const el = `<circle cx="57" cy="57" r="42" fill="none" stroke="${s.color}" stroke-width="14" stroke-dasharray="${len.toFixed(1)} ${C}" stroke-dashoffset="${(-offset).toFixed(1)}"/>`;
+      offset += len;
+      return el;
+    }).join('');
+
+    svg.innerHTML = `<circle cx="57" cy="57" r="42" fill="none" stroke="var(--track-bg)" stroke-width="14"/>${rings}`;
+    document.getElementById('budgetDonutLegend').innerHTML = slices.length === 0
+      ? `<span style="font-size:12.5px;color:var(--text-secondary);">No expenses logged yet</span>`
+      : slices.slice(0, 4).map(s => `
+          <div class="d-leg-row num">
+            <span><span style="color:${s.color};">●</span> ${escapeHtml(s.label)}</span>
+            <span class="money-val">${formatMoney(s.amount)}</span>
+          </div>
+        `).join('');
+
+    // 28-Day Spend Discipline Grid (Past & future unlogged dates remain plain/blank; Today updates live)
+    const todaySpent = expenses.filter(t => t.dayOfMonth === TODAY_DAY_NUM).reduce((s, t) => s + t.amount, 0);
+    const dailySafeTarget = Math.max(1, Math.round(state.monthlyCap / DAYS_IN_MONTH));
+    let todayClass = '';
+    let todayStatusLabel = 'Blank (₹0 today)';
+    if (todaySpent > 0) {
+      if (todaySpent <= dailySafeTarget) { todayClass = 'green'; todayStatusLabel = 'On Track (Green)'; }
+      else if (todaySpent <= dailySafeTarget * 1.35) { todayClass = 'amber'; todayStatusLabel = 'Near Limit (Amber)'; }
+      else { todayClass = 'red'; todayStatusLabel = 'Over Limit (Red)'; }
+    }
+    document.getElementById('disciplineTodayBadge').textContent = todayStatusLabel;
+
+    const todayIdx = 18; // Nov 20 in 28-day matrix
+    document.getElementById('disciplineGrid').innerHTML = Array.from({ length: 28 }, (_, idx) => {
+      const isToday = idx === todayIdx;
+      const cls = isToday ? `today-ring ${todayClass}` : '';
+      const dayNum = idx + 2;
+      return `<div class="disc-cell ${cls}" onclick="inspectDisciplineDay(${idx}, ${dayNum}, ${todaySpent})"></div>`;
+    }).join('');
+
+    // Category Envelopes
+    document.getElementById('categoryEnvelopesList').innerHTML = state.categories.map(c => {
+      const spent = expenses.filter(t => t.categoryId === c.id).reduce((s, t) => s + t.amount, 0);
+      const pct = Math.min(100, Math.round((spent / Math.max(1, c.limit)) * 100));
+      return `
+        <div class="glass-card env-card">
+          <div class="env-top">
+            <div class="env-left">
+              <div class="tx-icon-squircle" style="width:36px;height:36px;border-radius:11px;background:${c.color}1F;">${c.icon}</div>
+              <div>
+                <div style="font-size:14px;font-weight:700;">${escapeHtml(c.name)}</div>
+                <div class="num money-val" style="font-size:12px;color:var(--text-secondary);">${formatMoney(spent)} of ${formatMoney(c.limit)}</div>
+              </div>
+            </div>
+            <span class="num" style="font-size:12.5px;font-weight:700;color:${pct >= 90 ? 'var(--accent-red)' : c.color};">${pct}%</span>
+          </div>
+          <div class="env-bar-track">
+            <div class="env-bar-fill" style="width:${pct}%;background:${pct >= 95 ? 'var(--accent-red)' : c.color};"></div>
+          </div>
+          <div class="env-actions">
+            <button class="tiny-pill num" onclick="quickLogCategory('${c.id}', 100)">+100</button>
+            <div style="display:flex;gap:6px;">
+              <button class="tiny-pill" onclick="openCategoryModal('${c.id}')">Edit</button>
+              <button class="tiny-pill" style="color:var(--accent-red);" onclick="deleteCategory('${c.id}')">Delete</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Recurring Bills
+    document.getElementById('recurringBillsList').innerHTML = state.bills.map(b => `
+      <div class="glass-card env-card">
+        <div class="env-top" style="margin-bottom:0;">
+          <div>
+            <div style="font-size:14px;font-weight:700;">${escapeHtml(b.title)}</div>
+            <div class="num money-val" style="font-size:12px;color:var(--text-secondary);">${formatMoney(b.amount)} · Due in ${b.dueDays}d</div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <button class="tiny-pill pay" onclick="payRecurringBill('${b.id}')">Pay Now</button>
+            <button class="tiny-pill" style="color:var(--accent-red);" onclick="deleteBill('${b.id}')">×</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function inspectDisciplineDay(idx, dayNum, todaySpent) {
+    const msg = idx === 18
+      ? `Nov ${dayNum} (Today): ${formatMoney(todaySpent)} spent`
+      : idx < 18 ? `Nov ${dayNum}: Past day (Blank)` : `Nov ${dayNum}: Future day (Blank)`;
+    document.getElementById('discSelectedInfo').textContent = msg;
+    haptic();
+  }
+
+  function quickLogCategory(catId, amt) {
+    const cat = state.categories.find(c => c.id === catId);
+    const defWallet = state.wallets.find(w => w.isDefault) || state.wallets[0];
+    if (!cat || !defWallet) return;
+    const tx = {
+      id: 'tx_' + Date.now(),
+      mode: 'expense',
+      title: `${cat.name} Quick Log`,
+      amount: amt,
+      categoryId: catId,
+      walletId: defWallet.id,
+      toWalletId: null,
+      tag: '#envelope',
+      dayOfMonth: TODAY_DAY_NUM,
+      dayIdx: 4,
+      timeStr: getCurrentTime12()
+    };
+    defWallet.balance -= amt;
+    state.transactions.unshift(tx);
+    saveState();
+    renderAll();
+    haptic();
+    notifyIsland(`+${formatMoney(amt)} in ${cat.name}`);
+  }
+
+  function deleteCategory(id) {
+    if (state.categories.length <= 1) return notifyIsland('Keep at least 1 category');
+    const idx = state.categories.findIndex(c => c.id === id);
+    if (idx === -1) return;
+    const [rem] = state.categories.splice(idx, 1);
+    undoPayload = { type: 'deletedCat', cat: rem, index: idx };
+    saveState();
+    renderAll();
+    notifyIsland('Category Deleted', true);
+  }
+
+  function payRecurringBill(id) {
+    const b = state.bills.find(x => x.id === id);
+    if (!b) return;
+    const w = state.wallets.find(x => x.id === b.walletId) || state.wallets[0];
+    w.balance -= b.amount;
+    state.transactions.unshift({
+      id: 'tx_' + Date.now(),
+      mode: 'expense',
+      title: b.title,
+      amount: b.amount,
+      categoryId: b.categoryId,
+      walletId: w.id,
+      toWalletId: null,
+      tag: '#bill',
+      dayOfMonth: TODAY_DAY_NUM,
+      dayIdx: 4,
+      timeStr: getCurrentTime12()
+    });
+    b.dueDays += 30;
+    saveState();
+    renderAll();
+    haptic();
+    notifyIsland(`Paid ${b.title}`);
+  }
+
+  function deleteBill(id) {
+    state.bills = state.bills.filter(b => b.id !== id);
+    saveState();
+    renderAll();
+    notifyIsland('Bill Removed');
+  }
+
+  function editMonthlyCap() {
+    openEntityModal(`
+      <div class="sheet-head"><span class="sheet-title">Edit Monthly Cap</span><button class="close-circle" onclick="closeOverlay('entityOverlay')">×</button></div>
+      <div class="field-box"><label class="field-lbl">Monthly Budget Target (INR)</label><input class="field-input num" id="mCapInp" type="number" value="${state.monthlyCap}" /></div>
+      <button class="primary-cta" style="height:44px;" onclick="saveMonthlyCap()">Update Cap</button>
+    `);
+  }
+
+  function saveMonthlyCap() {
+    const v = Number(document.getElementById('mCapInp').value);
+    if (v > 0) {
+      state.monthlyCap = v;
+      saveState();
+      renderAll();
+      notifyIsland('Monthly Cap Updated');
+    }
+    closeOverlay('entityOverlay');
+  }
+
+  function autoSumMonthlyCap() {
+    state.monthlyCap = state.categories.reduce((s, c) => s + c.limit, 0);
+    saveState();
+    renderAll();
+    notifyIsland(`Cap Set: ${formatMoney(state.monthlyCap)}`);
+  }
+
+  // ==================== WALLETS, JARS & SPLITS TAB ====================
+  function renderWalletsTab() {
+    document.getElementById('walletsListContainer').innerHTML = state.wallets.map(w => {
+      const isCredit = w.type === 'credit' && w.creditLimit > 0;
+      const used = isCredit ? Math.abs(Math.min(0, w.balance)) : 0;
+      const utilPct = isCredit ? Math.min(100, Math.round((used / w.creditLimit) * 100)) : 0;
+      return `
+        <div class="glass-card wallet-card-item">
+          <div class="w-card-top">
+            <div>
+              <div style="font-size:15.5px;font-weight:700;">${escapeHtml(w.name)}</div>
+              <div style="font-size:11.5px;color:var(--text-secondary);text-transform:uppercase;">${w.type}</div>
+            </div>
+            ${w.isDefault ? `<span class="w-default-tag">Default</span>` : `<button class="tiny-pill" onclick="setDefaultWallet('${w.id}')">Set Default</button>`}
+          </div>
+          <div class="num money-val" style="font-size:24px;font-weight:800;margin-bottom:10px;">${formatMoney(w.balance)}</div>
+          ${isCredit ? `
+            <div style="margin-bottom:10px;">
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-secondary);margin-bottom:4px;">
+                <span>Credit Utilization</span><span class="num">${utilPct}% of ${formatMoney(w.creditLimit)}</span>
+              </div>
+              <div class="env-bar-track" style="margin:0;"><div class="env-bar-fill" style="width:${utilPct}%;background:var(--accent-purple);"></div></div>
+            </div>
+          ` : ''}
+          <div style="display:flex;gap:8px;">
+            <button class="tiny-pill" onclick="openWalletModal('${w.id}')">Edit</button>
+            ${state.wallets.length > 1 ? `<button class="tiny-pill" style="color:var(--accent-red);" onclick="deleteWallet('${w.id}')">Delete</button>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Savings Jars
+    document.getElementById('savingsJarsList').innerHTML = state.goals.map(g => {
+      const pct = Math.min(100, Math.round((g.saved / Math.max(1, g.target)) * 100));
+      return `
+        <div class="glass-card env-card">
+          <div class="env-top">
+            <div>
+              <div style="font-size:14.5px;font-weight:700;">${escapeHtml(g.title)}</div>
+              <div class="num money-val" style="font-size:12px;color:var(--text-secondary);">${formatMoney(g.saved)} / ${formatMoney(g.target)}</div>
+            </div>
+            <button class="tiny-pill pay" onclick="depositGoal('${g.id}', 1000)">+ Deposit</button>
+          </div>
+          <div class="env-bar-track" style="margin:0;"><div class="env-bar-fill" style="width:${pct}%;background:${g.color};"></div></div>
+        </div>
+      `;
+    }).join('');
+
+    // Splits & IOUs
+    const owedToYou = state.splits.filter(s => !s.settled && s.type === 'owed_to_you').reduce((a, b) => a + b.amount, 0);
+    const youOwe = state.splits.filter(s => !s.settled && s.type === 'you_owe').reduce((a, b) => a + b.amount, 0);
+    document.getElementById('owedToYouVal').textContent = formatMoney(owedToYou);
+    document.getElementById('youOweVal').textContent = formatMoney(youOwe);
+
+    document.getElementById('splitsList').innerHTML = state.splits.map(s => `
+      <div class="glass-card env-card">
+        <div class="env-top" style="margin-bottom:0;">
+          <div>
+            <div style="font-size:14px;font-weight:700;">${escapeHtml(s.person)} · <span style="color:${s.type === 'owed_to_you' ? 'var(--accent-green)' : 'var(--accent-amber)'};">${s.type === 'owed_to_you' ? 'Owes you' : 'You owe'}</span></div>
+            <div class="num money-val" style="font-size:12px;color:var(--text-secondary);">${escapeHtml(s.note)} · ${formatMoney(s.amount)}</div>
+          </div>
+          ${s.settled
+            ? `<span class="savings-pill">Settled ✓</span>`
+            : `<button class="tiny-pill pay" onclick="settleSplit('${s.id}')">Settle Up</button>`
+          }
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function setDefaultWallet(id) {
+    state.wallets.forEach(w => w.isDefault = (w.id === id));
+    saveState();
+    renderWalletsTab();
+    notifyIsland('Default Wallet Updated');
+  }
+
+  function deleteWallet(id) {
+    state.wallets = state.wallets.filter(w => w.id !== id);
+    if (!state.wallets.some(w => w.isDefault) && state.wallets[0]) state.wallets[0].isDefault = true;
+    saveState();
+    renderAll();
+    notifyIsland('Wallet Deleted');
+  }
+
+  function depositGoal(id, amt) {
+    const g = state.goals.find(x => x.id === id);
+    const w = state.wallets.find(x => x.isDefault) || state.wallets[0];
+    if (!g || !w) return;
+    g.saved += amt;
+    w.balance -= amt;
+    saveState();
+    renderAll();
+    haptic();
+    notifyIsland(`Saved +${formatMoney(amt)} to ${g.title}`);
+  }
+
+  function settleSplit(id) {
+    const s = state.splits.find(x => x.id === id);
+    const w = state.wallets.find(x => x.isDefault) || state.wallets[0];
+    if (!s || !w) return;
+    s.settled = true;
+    if (s.type === 'owed_to_you') w.balance += s.amount;
+    else w.balance -= s.amount;
+    saveState();
+    renderAll();
+    haptic();
+    notifyIsland(`Settled with ${s.person}`);
+  }
+
+  // ==================== COMPOSER & 4x4 CALCULATOR KEYPAD ====================
+  function openComposerSheet() {
+    editingTxId = null;
+    composerMode = 'expense';
+    calcStr = '0';
+    composerCatId = state.categories[0]?.id || 'cat_food';
+    composerWalletId = (state.wallets.find(w => w.isDefault) || state.wallets[0])?.id || 'w_upi';
+    composerToWalletId = state.wallets.find(w => w.id !== composerWalletId)?.id || composerWalletId;
+    composerDayOffset = 0;
+    const now = new Date();
+    composerHour = now.getHours();
+    composerMinute = now.getMinutes();
+
+    document.getElementById('composerSheetTitle').textContent = 'Log Transaction';
+    document.getElementById('magicEntryInput').value = '';
+    document.getElementById('txTitleInput').value = '';
+    document.getElementById('txTagInput').value = '';
+    document.getElementById('splitToggleCheck').checked = false;
+    document.getElementById('splitPersonRow').style.display = 'none';
+    document.getElementById('splitPersonInput').value = '';
+
+    setComposerMode('expense');
+    updateCalcDisplay();
+    updateDrumTriggerLabel();
+    document.getElementById('composerOverlay').classList.add('open');
+  }
+
+  function openComposerForEdit(txId) {
+    const tx = state.transactions.find(t => t.id === txId);
+    if (!tx) return;
+    editingTxId = txId;
+    composerMode = tx.mode;
+    calcStr = String(tx.amount);
+    composerCatId = tx.categoryId;
+    composerWalletId = tx.walletId;
+    composerToWalletId = tx.toWalletId || composerWalletId;
+    composerDayOffset = (tx.dayOfMonth || TODAY_DAY_NUM) - TODAY_DAY_NUM;
+
+    document.getElementById('composerSheetTitle').textContent = 'Edit Transaction';
+    document.getElementById('magicEntryInput').value = '';
+    document.getElementById('txTitleInput').value = tx.title;
+    document.getElementById('txTagInput').value = tx.tag || '';
+    document.getElementById('splitToggleCheck').checked = false;
+    document.getElementById('splitPersonRow').style.display = 'none';
+
+    setComposerMode(tx.mode);
+    updateCalcDisplay();
+    updateDrumTriggerLabel();
+    document.getElementById('composerOverlay').classList.add('open');
+  }
+
+  function setComposerMode(m) {
+    composerMode = m;
+    document.querySelectorAll('.mode-tab').forEach(b => b.classList.toggle('active', b.dataset.cmode === m));
+    document.getElementById('composerCatBox').style.display = m === 'transfer' ? 'none' : 'block';
+    document.getElementById('composerToWalletBox').style.display = m === 'transfer' ? 'block' : 'none';
+    document.getElementById('splitInlineBox').style.display = m === 'expense' ? 'block' : 'none';
+    document.getElementById('composerWalletLabel').textContent = m === 'transfer' ? 'From Source Wallet' : 'Wallet';
+    renderComposerChips();
+  }
+
+  function renderComposerChips() {
+    document.getElementById('composerCatChips').innerHTML = state.categories.map(c => `
+      <button type="button" class="sel-chip ${composerCatId === c.id ? 'active' : ''}" onclick="composerCatId='${c.id}';renderComposerChips()">${c.icon} ${escapeHtml(c.name)}</button>
+    `).join('');
+
+    document.getElementById('composerWalletChips').innerHTML = state.wallets.map(w => `
+      <button type="button" class="sel-chip ${composerWalletId === w.id ? 'active' : ''}" onclick="composerWalletId='${w.id}';renderComposerChips()">${escapeHtml(w.name)}</button>
+    `).join('');
+
+    document.getElementById('composerToWalletChips').innerHTML = state.wallets.map(w => `
+      <button type="button" class="sel-chip ${composerToWalletId === w.id ? 'active' : ''}" onclick="composerToWalletId='${w.id}';renderComposerChips()">${escapeHtml(w.name)}</button>
+    `).join('');
+  }
+
+  function parseMagicEntry(text) {
+    const raw = text.trim();
+    if (!raw) return;
+    const numMatch = raw.match(/(\d+(?:\.\d+)?)/);
+    if (numMatch) {
+      calcStr = numMatch[1];
+      updateCalcDisplay();
+    }
+    const tagMatch = raw.match(/(#[a-zA-Z0-9_]+)/);
+    if (tagMatch) {
+      document.getElementById('txTagInput').value = tagMatch[1].toLowerCase();
+    }
+    const splitMatch = raw.match(/split\s+(?:with\s+)?([a-zA-Z]+)/i);
+    if (splitMatch) {
+      document.getElementById('splitToggleCheck').checked = true;
+      document.getElementById('splitPersonRow').style.display = 'block';
+      document.getElementById('splitPersonInput').value = splitMatch[1];
+    }
+    const lower = raw.toLowerCase();
+    if (lower.includes('coffee') || lower.includes('lunch') || lower.includes('dinner') || lower.includes('food')) composerCatId = 'cat_food';
+    else if (lower.includes('cab') || lower.includes('uber') || lower.includes('fuel') || lower.includes('metro')) composerCatId = 'cat_trans';
+    else if (lower.includes('shop') || lower.includes('amazon') || lower.includes('grocer')) composerCatId = 'cat_shop';
+    else if (lower.includes('bill') || lower.includes('electric') || lower.includes('rent')) composerCatId = 'cat_bills';
+    renderComposerChips();
+
+    const cleanedTitle = raw
+      .replace(/(\d+(?:\.\d+)?)/g, '')
+      .replace(/(#[a-zA-Z0-9_]+)/g, '')
+      .replace(/split\s+(?:with\s+)?[a-zA-Z]+/gi, '')
+      .trim();
+    if (cleanedTitle) {
+      document.getElementById('txTitleInput').value = cleanedTitle.charAt(0).toUpperCase() + cleanedTitle.slice(1);
+    }
+  }
+
+  function evaluateExpression(expr) {
+    try {
+      const sanitized = String(expr).replace(/[^0-9+\-*/.]/g, '');
+      if (!sanitized) return 0;
+      const tokens = sanitized.match(/(\d+\.?\d*|\.\d+|[+\-*/])/g);
+      if (!tokens) return 0;
+      let stack = [parseFloat(tokens[0]) || 0];
+      for (let i = 1; i < tokens.length; i += 2) {
+        const op = tokens[i];
+        const next = parseFloat(tokens[i + 1]);
+        if (isNaN(next)) break;
+        if (op === '*') stack[stack.length - 1] *= next;
+        else if (op === '/') stack[stack.length - 1] = next === 0 ? 0 : stack[stack.length - 1] / next;
+        else if (op === '+') stack.push(next);
+        else if (op === '-') stack.push(-next);
+      }
+      const sum = stack.reduce((a, b) => a + b, 0);
+      return Math.max(0, Math.round(sum * 100) / 100);
+    } catch (e) { return 0; }
+  }
+
+  function updateCalcDisplay() {
+    const hasOp = /[+\-*/]/.test(calcStr.slice(1));
+    document.getElementById('calcExprLabel').textContent = hasOp ? calcStr.replace(/\*/g, '×').replace(/\//g, '÷') : '';
+    const val = evaluateExpression(calcStr);
+    document.getElementById('calcMainLabel').textContent = `${state.currencySymbol}${val.toLocaleString('en-IN')}`;
+    const eqBtn = document.querySelector('.key-btn.eq');
+    if (eqBtn) eqBtn.textContent = hasOp ? '=' : '+';
+  }
+
+  function pressKey(ch) {
+    if (calcStr === '0' && ch !== '.') calcStr = ch;
+    else calcStr += ch;
+    updateCalcDisplay();
+    haptic();
+  }
+
+  function pressOp(op) {
+    if (!/[+\-*/]$/.test(calcStr)) calcStr += op;
+    updateCalcDisplay();
+    haptic();
+  }
+
+  function evalOrPlus() {
+    const hasOp = /[+\-*/]/.test(calcStr.slice(1));
+    if (hasOp) {
+      calcStr = String(evaluateExpression(calcStr));
+    } else {
+      calcStr += '+';
+    }
+    updateCalcDisplay();
+    haptic();
+  }
+
+  function addQuickAmount(n) {
+    const cur = evaluateExpression(calcStr);
+    calcStr = String(cur + n);
+    updateCalcDisplay();
+    haptic();
+  }
+
+  function clearCalc() {
+    calcStr = '0';
+    updateCalcDisplay();
+  }
+
+  function pressBackspace() {
+    calcStr = calcStr.length > 1 ? calcStr.slice(0, -1) : '0';
+    updateCalcDisplay();
+    haptic();
+  }
+
+  function toggleSplitInline() {
+    const on = document.getElementById('splitToggleCheck').checked;
+    document.getElementById('splitPersonRow').style.display = on ? 'block' : 'none';
+  }
+
+  function saveComposerTransaction() {
+    const amount = evaluateExpression(calcStr);
+    if (amount <= 0) return notifyIsland('Enter an amount > 0');
+
+    const titleRaw = (document.getElementById('txTitleInput').value || '').trim();
+    const cat = state.categories.find(c => c.id === composerCatId);
+    const title = titleRaw || (composerMode === 'transfer' ? 'Wallet Transfer' : composerMode === 'income' ? 'Income Deposit' : (cat?.name || 'Expense'));
+    let tag = (document.getElementById('txTagInput').value || '').trim();
+    if (tag && !tag.startsWith('#')) tag = '#' + tag;
+
+    const dayOfMonth = Math.max(1, Math.min(DAYS_IN_MONTH, TODAY_DAY_NUM + composerDayOffset));
+    const dayIdx = Math.max(0, Math.min(6, 4 + composerDayOffset));
+    const h12 = composerHour % 12 || 12;
+    const ap = composerHour >= 12 ? 'PM' : 'AM';
+    const timeStr = `${String(h12).padStart(2, '0')}:${String(composerMinute).padStart(2, '0')} ${ap}`;
+
+    if (editingTxId) {
+      const idx = state.transactions.findIndex(t => t.id === editingTxId);
+      if (idx !== -1) {
+        applyWalletBalanceEffect(state.transactions[idx], -1);
+        const updated = {
+          ...state.transactions[idx],
+          mode: composerMode,
+          title,
+          amount,
+          categoryId: composerCatId,
+          walletId: composerWalletId,
+          toWalletId: composerMode === 'transfer' ? composerToWalletId : null,
+          tag,
+          dayOfMonth,
+          dayIdx,
+          timeStr
+        };
+        state.transactions[idx] = updated;
+        applyWalletBalanceEffect(updated, 1);
+      }
+      notifyIsland('Transaction Updated');
+    } else {
+      const tx = {
+        id: 'tx_' + Date.now(),
+        mode: composerMode,
+        title,
+        amount,
+        categoryId: composerCatId,
+        walletId: composerWalletId,
+        toWalletId: composerMode === 'transfer' ? composerToWalletId : null,
+        tag,
+        dayOfMonth,
+        dayIdx,
+        timeStr
+      };
+      state.transactions.unshift(tx);
+      applyWalletBalanceEffect(tx, 1);
+      undoPayload = { type: 'newTx', txId: tx.id };
+
+      if (composerMode === 'expense' && document.getElementById('splitToggleCheck').checked) {
+        const person = (document.getElementById('splitPersonInput').value || '').trim() || 'Friend';
+        state.splits.unshift({
+          id: 'sp_' + Date.now(),
+          person,
+          note: title,
+          amount: Math.round(amount / 2),
+          type: 'owed_to_you',
+          settled: false
+        });
+      }
+      notifyIsland(`Saved ${formatMoney(amount)}`, true);
+    }
+
+    saveState();
+    closeOverlay('composerOverlay');
+    renderAll();
+    haptic();
+  }
+
+  // ==================== CUSTOM 3D SCROLLING DATE & TIME DRUM PICKER ====================
+  function openDrumModal() {
+    const dayCol = document.getElementById('drumDayCol');
+    const hourCol = document.getElementById('drumHourCol');
+    const minCol = document.getElementById('drumMinCol');
+
+    const dayOffsets = [-3, -2, -1, 0];
+    const dayLabels = ['Nov 17', 'Nov 18', 'Yesterday', 'Today'];
+    dayCol.innerHTML = dayOffsets.map((off, i) => `<div class="drum-item" data-val="${off}">${dayLabels[i]}</div>`).join('');
+    hourCol.innerHTML = Array.from({ length: 24 }, (_, h) => `<div class="drum-item" data-val="${h}">${String(h).padStart(2, '0')}h</div>`).join('');
+    minCol.innerHTML = Array.from({ length: 60 }, (_, m) => `<div class="drum-item" data-val="${m}">${String(m).padStart(2, '0')}m</div>`).join('');
+
+    document.getElementById('drumOverlay').classList.add('open');
+    setTimeout(() => {
+      dayCol.scrollTop = dayOffsets.indexOf(composerDayOffset) * 38;
+      hourCol.scrollTop = composerHour * 38;
+      minCol.scrollTop = composerMinute * 38;
+    }, 20);
+  }
+
+  function confirmDrumSelection() {
+    const dayOffsets = [-3, -2, -1, 0];
+    const dIdx = Math.max(0, Math.min(3, Math.round(document.getElementById('drumDayCol').scrollTop / 38)));
+    composerDayOffset = dayOffsets[dIdx];
+    composerHour = Math.max(0, Math.min(23, Math.round(document.getElementById('drumHourCol').scrollTop / 38)));
+    composerMinute = Math.max(0, Math.min(59, Math.round(document.getElementById('drumMinCol').scrollTop / 38)));
+    updateDrumTriggerLabel();
+    closeOverlay('drumOverlay');
+    haptic();
+  }
+
+  function updateDrumTriggerLabel() {
+    const dayTxt = composerDayOffset === 0 ? 'Today' : composerDayOffset === -1 ? 'Yesterday' : `Nov ${TODAY_DAY_NUM + composerDayOffset}`;
+    const h12 = composerHour % 12 || 12;
+    const ap = composerHour >= 12 ? 'PM' : 'AM';
+    document.getElementById('txDateDrumBtn').textContent = `${dayTxt} · ${String(h12).padStart(2, '0')}:${String(composerMinute).padStart(2, '0')} ${ap} ⌄`;
+  }
+
+  // ==================== DYNAMIC ENTITY MODALS ====================
+  function openEntityModal(html) {
+    document.getElementById('entityModalBody').innerHTML = html;
+    document.getElementById('entityOverlay').classList.add('open');
+  }
+
+  function openPresetModal() {
+    openEntityModal(`
+      <div class="sheet-head"><span class="sheet-title">New 1-Tap Preset</span><button class="close-circle" onclick="closeOverlay('entityOverlay')">×</button></div>
+      <div class="field-box"><label class="field-lbl">Emoji & Label</label><input class="field-input" id="prTitle" placeholder="e.g., Chai & Snack" /></div>
+      <div class="field-box"><label class="field-lbl">Amount (INR)</label><input class="field-input num" id="prAmt" type="number" placeholder="120" /></div>
+      <button class="primary-cta" style="height:44px;" onclick="savePresetModal()">Add Preset</button>
+    `);
+  }
+
+  function savePresetModal() {
+    const title = (document.getElementById('prTitle').value || '').trim() || 'Quick Spend';
+    const amount = Number(document.getElementById('prAmt').value) || 100;
+    state.presets.push({ id: 'p_' + Date.now(), icon: '⚡', title, amount, categoryId: state.categories[0]?.id || 'cat_food' });
+    saveState();
+    closeOverlay('entityOverlay');
+    renderAll();
+    notifyIsland('Preset Added');
+  }
+
+  function openCategoryModal(editId = null) {
+    const c = editId ? state.categories.find(x => x.id === editId) : null;
+    openEntityModal(`
+      <div class="sheet-head"><span class="sheet-title">${c ? 'Edit Category' : 'New Category'}</span><button class="close-circle" onclick="closeOverlay('entityOverlay')">×</button></div>
+      <div class="field-box"><label class="field-lbl">Category Name</label><input class="field-input" id="catNameInp" value="${c ? escapeHtml(c.name) : ''}" placeholder="e.g., Fitness & Health" /></div>
+      <div class="field-box"><label class="field-lbl">Icon Emoji</label><input class="field-input" id="catIconInp" value="${c ? c.icon : '🌿'}" /></div>
+      <div class="field-box"><label class="field-lbl">Monthly Budget Limit (INR)</label><input class="field-input num" id="catLimInp" type="number" value="${c ? c.limit : 5000}" /></div>
+      <button class="primary-cta" style="height:44px;" onclick="saveCategoryModal('${editId || ''}')">Save Category</button>
+    `);
+  }
+
+  function saveCategoryModal(editId) {
+    const name = (document.getElementById('catNameInp').value || '').trim() || 'Custom';
+    const icon = (document.getElementById('catIconInp').value || '').trim() || '✨';
+    const limit = Number(document.getElementById('catLimInp').value) || 5000;
+    if (editId) {
+      const c = state.categories.find(x => x.id === editId);
+      if (c) { c.name = name; c.icon = icon; c.limit = limit; }
+    } else {
+      const colors = ['#34C759', '#007AFF', '#FF9F0A', '#AF52DE', '#5AC8FA'];
+      state.categories.push({ id: 'cat_' + Date.now(), name, icon, color: colors[state.categories.length % colors.length], limit });
+    }
+    saveState();
+    closeOverlay('entityOverlay');
+    renderAll();
+    notifyIsland('Category Saved');
+  }
+
+  function openBillModal() {
+    openEntityModal(`
+      <div class="sheet-head"><span class="sheet-title">New Recurring Bill</span><button class="close-circle" onclick="closeOverlay('entityOverlay')">×</button></div>
+      <div class="field-box"><label class="field-lbl">Bill Title</label><input class="field-input" id="billTitleInp" placeholder="e.g., Gym Membership" /></div>
+      <div class="field-box"><label class="field-lbl">Amount (INR)</label><input class="field-input num" id="billAmtInp" type="number" placeholder="1500" /></div>
+      <div class="field-box"><label class="field-lbl">Due in (Days)</label><input class="field-input num" id="billDueInp" type="number" value="5" /></div>
+      <button class="primary-cta" style="height:44px;" onclick="saveBillModal()">Add Bill</button>
+    `);
+  }
+
+  function saveBillModal() {
+    const title = (document.getElementById('billTitleInp').value || '').trim() || 'Subscription';
+    const amount = Number(document.getElementById('billAmtInp').value) || 499;
+    const dueDays = Number(document.getElementById('billDueInp').value) || 5;
+    state.bills.push({ id: 'b_' + Date.now(), title, amount, dueDays, categoryId: 'cat_bills', walletId: state.wallets[0].id });
+    saveState();
+    closeOverlay('entityOverlay');
+    renderAll();
+    notifyIsland('Bill Scheduled');
+  }
+
+  function openWalletModal(editId = null) {
+    const w = editId ? state.wallets.find(x => x.id === editId) : null;
+    openEntityModal(`
+      <div class="sheet-head"><span class="sheet-title">${w ? 'Edit Wallet' : 'Add Wallet'}</span><button class="close-circle" onclick="closeOverlay('entityOverlay')">×</button></div>
+      <div class="field-box"><label class="field-lbl">Wallet / Account Name</label><input class="field-input" id="walNameInp" value="${w ? escapeHtml(w.name) : ''}" placeholder="e.g., ICICI Savings" /></div>
+      <div class="field-box"><label class="field-lbl">Current Balance (INR)</label><input class="field-input num" id="walBalInp" type="number" value="${w ? w.balance : 10000}" /></div>
+      <button class="primary-cta" style="height:44px;" onclick="saveWalletModal('${editId || ''}')">Save Wallet</button>
+    `);
+  }
+
+  function saveWalletModal(editId) {
+    const name = (document.getElementById('walNameInp').value || '').trim() || 'New Account';
+    const balance = Number(document.getElementById('walBalInp').value) || 0;
+    if (editId) {
+      const w = state.wallets.find(x => x.id === editId);
+      if (w) { w.name = name; w.balance = balance; }
+    } else {
+      state.wallets.push({ id: 'w_' + Date.now(), name, type: 'bank', balance, creditLimit: 0, isDefault: false });
+    }
+    saveState();
+    closeOverlay('entityOverlay');
+    renderAll();
+    notifyIsland('Wallet Saved');
+  }
+
+  function openGoalModal() {
+    openEntityModal(`
+      <div class="sheet-head"><span class="sheet-title">New Savings Jar</span><button class="close-circle" onclick="closeOverlay('entityOverlay')">×</button></div>
+      <div class="field-box"><label class="field-lbl">Goal Title</label><input class="field-input" id="goalTitleInp" placeholder="e.g., MacBook Pro Fund" /></div>
+      <div class="field-box"><label class="field-lbl">Target Amount (INR)</label><input class="field-input num" id="goalTargetInp" type="number" value="50000" /></div>
+      <button class="primary-cta" style="height:44px;" onclick="saveGoalModal()">Create Jar</button>
+    `);
+  }
+
+  function saveGoalModal() {
+    const title = (document.getElementById('goalTitleInp').value || '').trim() || 'Savings Goal';
+    const target = Number(document.getElementById('goalTargetInp').value) || 25000;
+    state.goals.push({ id: 'g_' + Date.now(), title, saved: 0, target, color: '#34C759' });
+    saveState();
+    closeOverlay('entityOverlay');
+    renderAll();
+    notifyIsland('Savings Jar Created');
+  }
+
+  function openSplitModal() {
+    openEntityModal(`
+      <div class="sheet-head"><span class="sheet-title">New Split IOU</span><button class="close-circle" onclick="closeOverlay('entityOverlay')">×</button></div>
+      <div class="field-box"><label class="field-lbl">Person Name</label><input class="field-input" id="spPersonInp" placeholder="e.g., Vikram" /></div>
+      <div class="field-box"><label class="field-lbl">Note</label><input class="field-input" id="spNoteInp" placeholder="e.g., Weekend Trip" /></div>
+      <div class="field-box"><label class="field-lbl">Amount (INR)</label><input class="field-input num" id="spAmtInp" type="number" value="800" /></div>
+      <button class="primary-cta" style="height:44px;" onclick="saveSplitModal()">Add Split</button>
+    `);
+  }
+
+  function saveSplitModal() {
+    const person = (document.getElementById('spPersonInp').value || '').trim() || 'Friend';
+    const note = (document.getElementById('spNoteInp').value || '').trim() || 'Shared Expense';
+    const amount = Number(document.getElementById('spAmtInp').value) || 500;
+    state.splits.unshift({ id: 's_' + Date.now(), person, note, amount, type: 'owed_to_you', settled: false });
+    saveState();
+    closeOverlay('entityOverlay');
+    renderAll();
+    notifyIsland('Split Added');
+  }
+
+  function openCurrencyEditor() {
+    openEntityModal(`
+      <div class="sheet-head"><span class="sheet-title">Currency & Rate</span><button class="close-circle" onclick="closeOverlay('entityOverlay')">×</button></div>
+      <div class="field-box"><label class="field-lbl">Currency Symbol</label><input class="field-input" id="curSymInp" value="${escapeHtml(state.currencySymbol)}" /></div>
+      <div class="field-box"><label class="field-lbl">Currency Code</label><input class="field-input" id="curCodeInp" value="${escapeHtml(state.currencyCode)}" /></div>
+      <div class="field-box"><label class="field-lbl">1 USD = X INR Rate</label><input class="field-input num" id="curRateInp" type="number" value="${state.usdRate}" /></div>
+      <button class="primary-cta" style="height:44px;" onclick="saveCurrencyEditor()">Save Currency</button>
+    `);
+  }
+
+  function saveCurrencyEditor() {
+    state.currencySymbol = (document.getElementById('curSymInp').value || '').trim() || '₹';
+    state.currencyCode = (document.getElementById('curCodeInp').value || '').trim().toUpperCase() || 'INR';
+    state.usdRate = Number(document.getElementById('curRateInp').value) || 84;
+    saveState();
+    closeOverlay('entityOverlay');
+    applyThemeAndPrivacy();
+    renderAll();
+    notifyIsland('Currency Updated');
+  }
+
+  // ==================== EXPORT / IMPORT / RESET DATA ====================
+  function triggerFileDownload(filename, mime, content) {
+    if (window.AndroidBridge && typeof window.AndroidBridge.shareTextFile === 'function') {
+      try {
+        window.AndroidBridge.shareTextFile(filename, mime, content);
+        return;
+      } catch (e) {}
+    }
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function exportCSV() {
+    const header = 'Date,Title,Type,Category,Wallet,Tag,Amount_INR\n';
+    const rows = state.transactions.map(t => {
+      const cat = state.categories.find(c => c.id === t.categoryId)?.name || 'General';
+      const wal = state.wallets.find(w => w.id === t.walletId)?.name || 'Wallet';
+      return `"Nov ${t.dayOfMonth}","${t.title.replace(/"/g, '""')}","${t.mode}","${cat}","${wal}","${t.tag || ''}",${t.amount}`;
+    }).join('\n');
+    triggerFileDownload('moneyflow-statement.csv', 'text/csv', header + rows);
+    notifyIsland('Exported CSV Statement');
+  }
+
+  function exportJSON() {
+    triggerFileDownload('moneyflow-backup.json', 'application/json', JSON.stringify(state, null, 2));
+    notifyIsland('Exported JSON Backup');
+  }
+
+  function importJSON(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const parsed = JSON.parse(ev.target.result);
+        if (parsed && Array.isArray(parsed.transactions)) {
+          state = parsed;
+          saveState();
+          applyThemeAndPrivacy();
+          renderAll();
+          notifyIsland('Backup Restored ✓');
+        }
+      } catch (err) {
+        notifyIsland('Invalid JSON File');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function startFreshBlank() {
+    state.transactions = [];
+    state.splits = [];
+    state.wallets.forEach(w => w.balance = 0);
+    saveState();
+    renderAll();
+    notifyIsland('Started Blank Ledger');
+  }
+
+  function restoreDemoData() {
+    const keepTheme = state.theme;
+    state = getDefaultState();
+    state.theme = keepTheme;
+    saveState();
+    applyThemeAndPrivacy();
+    renderAll();
+    notifyIsland('Restored Demo Data');
+  }
+
+  // Helpers
+  function closeOverlay(id) { document.getElementById(id).classList.remove('open'); }
+  function closeOnBg(e, id) { if (e.target.id === id) closeOverlay(id); }
+  function getCurrentTime12() {
+    const d = new Date();
+    const h = d.getHours() % 12 || 12;
+    const m = String(d.getMinutes()).padStart(2, '0');
+    return `${String(h).padStart(2, '0')}:${m} ${d.getHours() >= 12 ? 'PM' : 'AM'}`;
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function renderAll() {
+    renderHomeHero();
+    renderPresets();
+    renderSparkBars();
+    renderLedger();
+    renderBudgetsTab();
+    renderWalletsTab();
+  }
+
+  // Live Status Clock
+  setInterval(() => {
+    const d = new Date();
+    const sc = document.getElementById('statusClock');
+    if (sc) sc.textContent = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  }, 15000);
+
+  applyThemeAndPrivacy();
+  renderAll();
+</script>
+</body>
+</html>
