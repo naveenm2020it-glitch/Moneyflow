@@ -2330,24 +2330,33 @@
           </div>
         `).join('');
 
-    // 28-Day Spend Discipline Grid (Past & future unlogged dates remain plain/blank; Today updates live)
-    const todaySpent = expenses.filter(t => t.dayOfMonth === TODAY_DAY_NUM).reduce((s, t) => s + t.amount, 0);
-    const dailySafeTarget = Math.max(1, Math.round(state.monthlyCap / DAYS_IN_MONTH));
-    let todayClass = '';
-    let todayStatusLabel = 'Blank (₹0 today)';
-    if (todaySpent > 0) {
-      if (todaySpent <= dailySafeTarget) { todayClass = 'green'; todayStatusLabel = 'On Track (Green)'; }
-      else if (todaySpent <= dailySafeTarget * 1.35) { todayClass = 'amber'; todayStatusLabel = 'Near Limit (Amber)'; }
-      else { todayClass = 'red'; todayStatusLabel = 'Over Limit (Red)'; }
-    }
+    // 28-Day Spend Discipline Grid: calculate each real local calendar date.
+    const today = getLocalToday();
+    const todayKey = [today.getFullYear(), String(today.getMonth() + 1).padStart(2, '0'), String(today.getDate()).padStart(2, '0')].join('-');
+    const dailySafeTarget = Math.max(1, state.monthlyCap / DAYS_IN_MONTH);
+    const dateKeyFor = (date) => [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
+    const dayRecords = Array.from({ length: 28 }, (_, idx) => {
+      const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() - (27 - idx));
+      const key = dateKeyFor(date);
+      const spent = expenses.reduce((sum, tx) => {
+        const txDate = getTransactionLocalDate(tx);
+        return txDate && dateKeyFor(txDate) === key ? sum + Number(tx.amount || 0) : sum;
+      }, 0);
+      let status = 'blank';
+      if (spent > 0) status = spent <= dailySafeTarget ? 'green' : spent <= dailySafeTarget * 1.35 ? 'amber' : 'red';
+      return { date, key, spent, status };
+    });
+    const todayRecord = dayRecords[27];
+    const todayStatusLabel = todayRecord.status === 'blank' ? 'Blank (₹0 today)'
+      : todayRecord.status === 'green' ? 'On Track (Green)'
+      : todayRecord.status === 'amber' ? 'Near Limit (Amber)' : 'Over Limit (Red)';
     document.getElementById('disciplineTodayBadge').textContent = todayStatusLabel;
-
-    const todayIdx = 18; // Nov 20 in 28-day matrix
-    document.getElementById('disciplineGrid').innerHTML = Array.from({ length: 28 }, (_, idx) => {
-      const isToday = idx === todayIdx;
-      const cls = isToday ? `today-ring ${todayClass}` : '';
-      const dayNum = idx + 2;
-      return `<div class="disc-cell ${cls}" onclick="inspectDisciplineDay(${idx}, ${dayNum}, ${todaySpent})"></div>`;
+    document.getElementById('disciplineGrid').innerHTML = dayRecords.map((day, idx) => {
+      const isToday = day.key === todayKey;
+      const cls = day.status === 'blank' ? '' : day.status;
+      const ring = isToday ? ' today-ring' : '';
+      const label = day.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+      return `<div class="disc-cell ${cls}${ring}" role="button" tabindex="0" aria-label="${label}: ${formatMoney(day.spent)} spent" title="${label}: ${formatMoney(day.spent)}" onclick="inspectDisciplineDay(${idx}, '${day.key}', ${day.spent})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();inspectDisciplineDay(${idx}, '${day.key}', ${day.spent})}"></div>`;
     }).join('');
 
     // Category Envelopes
@@ -2397,10 +2406,12 @@
     `).join('');
   }
 
-  function inspectDisciplineDay(idx, dayNum, todaySpent) {
-    const msg = idx === 18
-      ? `Nov ${dayNum} (Today): ${formatMoney(todaySpent)} spent`
-      : idx < 18 ? `Nov ${dayNum}: Past day (Blank)` : `Nov ${dayNum}: Future day (Blank)`;
+  function inspectDisciplineDay(idx, dateKey, spent) {
+    const [year, month, day] = String(dateKey).split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    const isToday = dateKey === [getLocalToday().getFullYear(), String(getLocalToday().getMonth() + 1).padStart(2, '0'), String(getLocalToday().getDate()).padStart(2, '0')].join('-');
+    const label = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    const msg = `${label}${isToday ? ' (Today)' : ''}: ${formatMoney(spent)} spent`;
     document.getElementById('discSelectedInfo').textContent = msg;
     haptic();
   }
@@ -2825,8 +2836,10 @@
     let tag = (document.getElementById('txTagInput').value || '').trim();
     if (tag && !tag.startsWith('#')) tag = '#' + tag;
 
-    const dayOfMonth = Math.max(1, Math.min(DAYS_IN_MONTH, TODAY_DAY_NUM + composerDayOffset));
-    const dayIdx = Math.max(0, Math.min(6, 4 + composerDayOffset));
+    const selectedLocalDate = new Date(getLocalToday().getFullYear(), getLocalToday().getMonth(), getLocalToday().getDate() + composerDayOffset);
+    const dateKey = [selectedLocalDate.getFullYear(), String(selectedLocalDate.getMonth() + 1).padStart(2, '0'), String(selectedLocalDate.getDate()).padStart(2, '0')].join('-');
+    const dayOfMonth = selectedLocalDate.getDate();
+    const dayIdx = (selectedLocalDate.getDay() + 6) % 7;
     const h12 = composerHour % 12 || 12;
     const ap = composerHour >= 12 ? 'PM' : 'AM';
     const timeStr = `${String(h12).padStart(2, '0')}:${String(composerMinute).padStart(2, '0')} ${ap}`;
@@ -2844,6 +2857,7 @@
           walletId: composerWalletId,
           toWalletId: composerMode === 'transfer' ? composerToWalletId : null,
           tag,
+          dateKey,
           dayOfMonth,
           dayIdx,
           timeStr
@@ -2862,6 +2876,7 @@
         walletId: composerWalletId,
         toWalletId: composerMode === 'transfer' ? composerToWalletId : null,
         tag,
+        dateKey,
         dayOfMonth,
         dayIdx,
         timeStr
