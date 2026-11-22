@@ -1745,7 +1745,7 @@
 
   function getTransactionLocalDate(tx) {
     // Prefer an explicit local date saved with the transaction.
-    if (tx.dateKey && /^\\d{4}-\\d{2}-\\d{2}$/.test(String(tx.dateKey))) {
+    if (tx.dateKey && /^\d{4}-\d{2}-\d{2}$/.test(String(tx.dateKey))) {
       const [year, month, day] = tx.dateKey.split('-').map(Number);
       const d = new Date(year, month - 1, day);
       if (d.getFullYear() === year && d.getMonth() === month - 1 && d.getDate() === day) return d;
@@ -2913,7 +2913,13 @@
     const minCol = document.getElementById('drumMinCol');
 
     const dayOffsets = [-3, -2, -1, 0];
-    const dayLabels = ['Nov 17', 'Nov 18', 'Yesterday', 'Today'];
+    const today = getLocalToday();
+    const dayLabels = dayOffsets.map((off) => {
+      if (off === 0) return 'Today';
+      if (off === -1) return 'Yesterday';
+      const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() + off);
+      return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    });
     dayCol.innerHTML = dayOffsets.map((off, i) => `<div class="drum-item" data-val="${off}">${dayLabels[i]}</div>`).join('');
     hourCol.innerHTML = Array.from({ length: 24 }, (_, h) => `<div class="drum-item" data-val="${h}">${String(h).padStart(2, '0')}h</div>`).join('');
     minCol.innerHTML = Array.from({ length: 60 }, (_, m) => `<div class="drum-item" data-val="${m}">${String(m).padStart(2, '0')}m</div>`).join('');
@@ -2938,7 +2944,8 @@
   }
 
   function updateDrumTriggerLabel() {
-    const dayTxt = composerDayOffset === 0 ? 'Today' : composerDayOffset === -1 ? 'Yesterday' : `Nov ${TODAY_DAY_NUM + composerDayOffset}`;
+    const selectedDate = new Date(getLocalToday().getFullYear(), getLocalToday().getMonth(), getLocalToday().getDate() + composerDayOffset);
+    const dayTxt = composerDayOffset === 0 ? 'Today' : composerDayOffset === -1 ? 'Yesterday' : selectedDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     const h12 = composerHour % 12 || 12;
     const ap = composerHour >= 12 ? 'PM' : 'AM';
     document.getElementById('txDateDrumBtn').textContent = `${dayTxt} · ${String(h12).padStart(2, '0')}:${String(composerMinute).padStart(2, '0')} ${ap} ⌄`;
