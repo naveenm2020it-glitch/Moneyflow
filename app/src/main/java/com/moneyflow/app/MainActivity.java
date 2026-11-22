@@ -86,7 +86,11 @@ public class MainActivity extends AppCompatActivity {
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-                return assetLoader.shouldInterceptRequest(request.getUrl());
+                Uri uri = request.getUrl();
+                if (!"https".equals(uri.getScheme()) || !"appassets.androidplatform.net".equals(uri.getHost())) {
+                    return new WebResourceResponse("text/plain", "UTF-8", null);
+                }
+                return assetLoader.shouldInterceptRequest(uri);
             }
 
             @Override
