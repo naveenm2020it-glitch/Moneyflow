@@ -1750,11 +1750,24 @@
       const d = new Date(year, month - 1, day);
       if (d.getFullYear() === year && d.getMonth() === month - 1 && d.getDate() === day) return d;
     }
-    // Timestamp IDs are used by all transactions created by the app.
+    // Older app versions stored the selected day in dayOfMonth but generated
+    // the ID from the save timestamp. Recover manual dates within the picker window.
     const match = String(tx.id || '').match(/^tx_(\d{10,})$/);
     if (match) {
-      const d = new Date(Number(match[1]));
-      if (!Number.isNaN(d.getTime())) return d;
+      const createdAt = new Date(Number(match[1]));
+      if (!Number.isNaN(createdAt.getTime())) {
+        const day = Number(tx.dayOfMonth);
+        if (Number.isInteger(day) && day >= 1 && day <= 31) {
+          const candidates = [-1, 0, 1].map(offset =>
+            new Date(createdAt.getFullYear(), createdAt.getMonth() + offset, day)
+          ).filter(candidate => candidate.getDate() === day);
+          const closest = candidates.sort((a, b) =>
+            Math.abs(a.getTime() - createdAt.getTime()) - Math.abs(b.getTime() - createdAt.getTime())
+          )[0];
+          if (closest && Math.abs(closest.getTime() - createdAt.getTime()) <= 3 * 86400000) return closest;
+        }
+        return createdAt;
+      }
     }
     // Legacy imported/demo entries have no year or month metadata. Keep their
     // day-of-month visible in the current month for backwards compatibility.
