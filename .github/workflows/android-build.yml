@@ -2,13 +2,15 @@ name: Build Moneyflow Android APK
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, fix/spend-heatmap-and-security]
     paths:
       - 'app/**'
       - '*.gradle'
       - 'gradle.properties'
       - 'gradle/**'
       - '.github/workflows/android-build.yml'
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
