@@ -2381,7 +2381,7 @@
         <div class="glass-card env-card">
           <div class="env-top">
             <div class="env-left">
-              <div class="tx-icon-squircle" style="width:36px;height:36px;border-radius:11px;background:${c.color}1F;">${c.icon}</div>
+              <div class="tx-icon-squircle" style="width:36px;height:36px;border-radius:11px;background:${c.color}1F;">${escapeHtml(c.icon)}</div>
               <div>
                 <div style="font-size:14px;font-weight:700;">${escapeHtml(c.name)}</div>
                 <div class="num money-val" style="font-size:12px;color:var(--text-secondary);">${formatMoney(spent)} of ${formatMoney(c.limit)}</div>
@@ -2716,7 +2716,7 @@
 
   function renderComposerChips() {
     document.getElementById('composerCatChips').innerHTML = state.categories.map(c => `
-      <button type="button" class="sel-chip ${composerCatId === c.id ? 'active' : ''}" onclick="composerCatId='${c.id}';renderComposerChips()">${c.icon} ${escapeHtml(c.name)}</button>
+      <button type="button" class="sel-chip ${composerCatId === c.id ? 'active' : ''}" onclick="composerCatId='${c.id}';renderComposerChips()">${escapeHtml(c.icon)} ${escapeHtml(c.name)}</button>
     `).join('');
 
     document.getElementById('composerWalletChips').innerHTML = state.wallets.map(w => `
@@ -2994,7 +2994,7 @@
     openEntityModal(`
       <div class="sheet-head"><span class="sheet-title">${c ? 'Edit Category' : 'New Category'}</span><button class="close-circle" onclick="closeOverlay('entityOverlay')">×</button></div>
       <div class="field-box"><label class="field-lbl">Category Name</label><input class="field-input" id="catNameInp" value="${c ? escapeHtml(c.name) : ''}" placeholder="e.g., Fitness & Health" /></div>
-      <div class="field-box"><label class="field-lbl">Icon Emoji</label><input class="field-input" id="catIconInp" value="${c ? c.icon : '🌿'}" /></div>
+      <div class="field-box"><label class="field-lbl">Icon Emoji</label><input class="field-input" id="catIconInp" value="${c ? escapeHtml(c.icon) : '🌿'}" /></div>
       <div class="field-box"><label class="field-lbl">Monthly Budget Limit (INR)</label><input class="field-input num" id="catLimInp" type="number" value="${c ? c.limit : 5000}" /></div>
       <button class="primary-cta" style="height:44px;" onclick="saveCategoryModal('${editId || ''}')">Save Category</button>
     `);
