@@ -20,6 +20,8 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -32,6 +34,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
+import androidx.webkit.WebViewAssetLoader;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -41,6 +44,7 @@ public class MainActivity extends AppCompatActivity {
 
     public static final String CHANNEL_ID = "moneyflow_alerts";
     private WebView webView;
+    private WebViewAssetLoader assetLoader;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -55,6 +59,10 @@ public class MainActivity extends AppCompatActivity {
         createNotificationChannel();
         requestNotificationPermissionIfNeeded();
 
+        assetLoader = new WebViewAssetLoader.Builder()
+            .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
+            .build();
+
         webView = new WebView(this);
         webView.setBackgroundColor(Color.TRANSPARENT);
         webView.setOverScrollMode(WebView.OVER_SCROLL_NEVER);
@@ -63,13 +71,41 @@ public class MainActivity extends AppCompatActivity {
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
-        settings.setAllowFileAccess(true);
+        // Serve bundled assets through the HTTPS asset origin; never expose file:// access.
+        settings.setAllowFileAccess(false);
+        settings.setAllowContentAccess(false);
+        settings.setAllowFileAccessFromFileURLs(false);
+        settings.setAllowUniversalAccessFromFileURLs(false);
+        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) settings.setSafeBrowsingEnabled(true);
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
         settings.setMediaPlaybackRequiresUserGesture(false);
 
         webView.addJavascriptInterface(new AndroidBridge(this), "AndroidBridge");
         webView.setWebChromeClient(new WebChromeClient());
-        webView.setWebViewClient(new WebViewClient());
+        webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                Uri uri = request.getUrl();
+                if (!"https".equals(uri.getScheme()) || !"appassets.androidplatform.net".equals(uri.getHost())) {
+                    return new WebResourceResponse("text/plain", "UTF-8", null);
+                }
+                return assetLoader.shouldInterceptRequest(uri);
+            }
+
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                return !"https".equals(request.getUrl().getScheme())
+                    || !"appassets.androidplatform.net".equals(request.getUrl().getHost());
+            }
+
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                Uri uri = Uri.parse(url);
+                return !"https".equals(uri.getScheme())
+                    || !"appassets.androidplatform.net".equals(uri.getHost());
+            }
+        });
 
         // Forward Android status/navigation bar safe-area insets into CSS variables
         ViewCompat.setOnApplyWindowInsetsListener(webView, (v, windowInsets) -> {
@@ -86,7 +122,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         setContentView(webView);
-        webView.loadUrl("file:///android_asset/www/index.html");
+        webView.loadUrl("https://appassets.androidplatform.net/assets/www/index.html");
     }
 
     @Override
@@ -160,6 +196,8 @@ public class MainActivity extends AppCompatActivity {
 
         @JavascriptInterface
         public void showImmediateNotification(String title, String body, int notifId) {
+            title = safeText(title, 80);
+            body = safeText(body, 240);
             Intent openIntent = new Intent(context, MainActivity.class);
             openIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
             PendingIntent pendingIntent = PendingIntent.getActivity(
@@ -187,6 +225,9 @@ public class MainActivity extends AppCompatActivity {
 
         @JavascriptInterface
         public void scheduleNotification(String title, String body, long triggerAtMillis, int requestCode) {
+            title = safeText(title, 80);
+            body = safeText(body, 240);
+            if (triggerAtMillis <= System.currentTimeMillis()) return;
             AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
             if (alarmManager == null) return;
 
@@ -218,6 +259,9 @@ public class MainActivity extends AppCompatActivity {
         @JavascriptInterface
         public void shareTextFile(String fileName, String mimeType, String content) {
             try {
+                if (fileName == null || !fileName.matches("[A-Za-z0-9._-]{1,80}") || fileName.contains("..")) return;
+                if (content == null || content.length() > 10_000_000) return;
+                if (!"text/csv".equals(mimeType) && !"application/json".equals(mimeType) && !"text/plain".equals(mimeType)) return;
                 File exportDir = new File(context.getCacheDir(), "exports");
                 if (!exportDir.exists()) exportDir.mkdirs();
                 File outFile = new File(exportDir, fileName);
@@ -238,6 +282,12 @@ public class MainActivity extends AppCompatActivity {
                 context.startActivity(chooser);
             } catch (Exception ignored) {
             }
+        }
+
+        private String safeText(String value, int maxLength) {
+            if (value == null) return "";
+            String clean = value.replace("\n", " ").replace("\r", " ").trim();
+            return clean.length() > maxLength ? clean.substring(0, maxLength) : clean;
         }
     }
 }
